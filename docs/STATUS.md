@@ -45,8 +45,10 @@ Aus Spike B (Details in `docs/SPIKES.md`), vor Phase 1 zu klären:
 
 ### Phase 0
 
-- [ ] Cloudflare: Public Hostname `board.dittgen.uk` → `http://<IP CT 118>:3000` im bestehenden Tunnel anlegen; Rocket Loader aus, Cache-Regel (`docs/SETUP.md` Schritt 4)
-- [ ] Fritz!Box: IP von CT 118 fest zuweisen
+- [x] CT 118 angelegt (192.168.1.151), App läuft (`sha-b43b8a6`), im täglichen Proxmox-Backup
+- [ ] Cloudflare: Public Hostname `board.dittgen.uk` → `http://192.168.1.151:3000` im bestehenden Tunnel anlegen; Rocket Loader aus, Cache-Regel (`docs/SETUP.md` Schritt 4)
+- [ ] Fritz!Box: IP 192.168.1.151 für CT 118 fest zuweisen
+- [ ] GitHub: Standard-Branch des Repos auf `main` umstellen (Settings → General → Default branch)
 - [ ] Handy: Zugangslink öffnen, App installieren, alle Fälle aus `docs/SPIKES.md` (Spike A) durchspielen
 - [ ] Optional: `/spike/excalidraw` auf Tablet/Handy öffnen, „300 Karten“ antippen und verschieben – flüssig?
 - [ ] Die drei offenen Fragen oben beantworten

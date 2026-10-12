@@ -1,23 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { loadConfig } from '../src/config.ts'
 import { cacheControlFor } from '../src/routes/static.ts'
-import { cookieOf, ORIGIN_HEADERS, PUBLIC_URL, post, setupAdmin, startApp, type TestApp } from './helpers.ts'
-
-function multipart(fields: Record<string, string>, files: { name: string; type: string; content: string }[]) {
-  const boundary = '----wbtest'
-  const chunks: string[] = []
-  for (const [name, value] of Object.entries(fields)) {
-    chunks.push(`--${boundary}\r\nContent-Disposition: form-data; name="${name}"\r\n\r\n${value}\r\n`)
-  }
-  for (const file of files) {
-    chunks.push(
-      `--${boundary}\r\nContent-Disposition: form-data; name="files"; filename="${file.name}"\r\n` +
-        `Content-Type: ${file.type}\r\n\r\n${file.content}\r\n`,
-    )
-  }
-  chunks.push(`--${boundary}--\r\n`)
-  return { payload: chunks.join(''), contentType: `multipart/form-data; boundary=${boundary}` }
-}
+import { cookieOf, PUBLIC_URL, post, setupAdmin, startApp, type TestApp } from './helpers.ts'
 
 describe('app basics', () => {
   let test: TestApp
@@ -52,70 +36,6 @@ describe('app basics', () => {
     const res = await test.app.inject({ method: 'GET', url: '/zugang?key=x', headers: { accept: 'text/html' } })
     expect(res.body).toContain('shell')
     expect(res.cookies).toHaveLength(0)
-  })
-
-  it('requires a session for the share test endpoints', async () => {
-    const res = await test.app.inject({ method: 'GET', url: '/api/debug/share' })
-    expect(res.statusCode).toBe(401)
-  })
-
-  it('rejects cross-site POSTs', async () => {
-    const body = multipart({ title: 'x' }, [])
-    const res = await test.app.inject({
-      method: 'POST',
-      url: '/api/debug/share',
-      headers: { cookie, 'content-type': body.contentType, 'sec-fetch-site': 'cross-site' },
-      payload: body.payload,
-    })
-    expect(res.statusCode).toBe(403)
-  })
-
-  it('records shared fields and files without keeping file contents', async () => {
-    const body = multipart({ title: 'Seite', text: 'Schau mal https://example.org', via: 'service-worker' }, [
-      { name: 'foto.jpg', type: 'image/jpeg', content: 'abcdef' },
-      { name: 'sprachnachricht.opus', type: 'audio/ogg', content: '1234' },
-    ])
-    const res = await test.app.inject({
-      method: 'POST',
-      url: '/api/debug/share',
-      headers: { cookie, 'content-type': body.contentType, ...ORIGIN_HEADERS },
-      payload: body.payload,
-    })
-    expect(res.statusCode).toBe(200)
-    const report = res.json()
-    expect(report).toMatchObject({
-      via: 'service-worker',
-      title: 'Seite',
-      text: 'Schau mal https://example.org',
-      url: null,
-      files: [
-        { name: 'foto.jpg', type: 'image/jpeg', size: 6 },
-        { name: 'sprachnachricht.opus', type: 'audio/ogg', size: 4 },
-      ],
-    })
-    const one = await test.app.inject({ method: 'GET', url: `/api/debug/share/${report.id}`, headers: { cookie } })
-    expect(one.json().id).toBe(report.id)
-  })
-
-  it('handles OS-initiated share-target posts as a fallback', async () => {
-    const body = multipart({ url: 'https://example.org' }, [])
-    const res = await test.app.inject({
-      method: 'POST',
-      url: '/share-target',
-      headers: { cookie, 'content-type': body.contentType, 'sec-fetch-site': 'none' },
-      payload: body.payload,
-    })
-    expect(res.statusCode).toBe(303)
-    expect(res.headers.location).toMatch(/^\/share\?report=[0-9A-Z]{26}$/)
-
-    const anonymous = await test.app.inject({
-      method: 'POST',
-      url: '/share-target',
-      headers: { 'content-type': body.contentType, 'sec-fetch-site': 'none' },
-      payload: body.payload,
-    })
-    expect(anonymous.statusCode).toBe(401)
-    expect(anonymous.headers['content-type']).toContain('text/html')
   })
 
   it('serves the app shell for client routes and JSON 404 for the API', async () => {

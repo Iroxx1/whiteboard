@@ -18,7 +18,7 @@ Aus der Inbox zieht man Inhalte per Drag & Drop aufs Board. Alternativ wählt ma
 
 ## Status
 
-Phase 2 (Inbox, Verarbeitung und Karten) abgeschlossen; als Nächstes Phase 3 (PWA und Teilen-Menü).
+Phase 3 (PWA und Teilen-Menü) abgeschlossen; als Nächstes Phase 4 (Telegram-Bot).
 
 - [`docs/PLAN.md`](docs/PLAN.md): vollständiger Umsetzungsplan (Anforderungen, Architektur, Phasen, Abnahmekriterien)
 - [`docs/STATUS.md`](docs/STATUS.md): Fortschritt und Entscheidungen

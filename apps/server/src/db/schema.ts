@@ -207,3 +207,21 @@ export const jobs = sqliteTable(
   },
   (table) => [index('jobs_status_idx').on(table.status, table.runAfter)],
 )
+
+// --- Phase 3: idempotent PWA uploads (PLAN.md 5.2, 5.6) ---
+
+export const shareRequests = sqliteTable('share_requests', {
+  clientShareId: text('client_share_id').primaryKey(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  // { "text": [...ids], "0": [...ids], "1": [...] } – items created per step, for repeated requests.
+  itemIds: text('item_ids').notNull().default('{}'),
+  groupId: text('group_id').notNull(),
+  // Note (URLs and hashtags removed) for the first file, resolved target board, file count.
+  note: text('note'),
+  title: text('title'),
+  targetBoardId: text('target_board_id'),
+  fileCount: integer('file_count').notNull().default(0),
+  createdAt: integer('created_at').notNull(),
+})

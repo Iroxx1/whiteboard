@@ -14,7 +14,6 @@ import type {
   OneTimeLink,
   Role,
   SessionInfo,
-  ShareReport,
   SnapshotInfo,
   ThemePreference,
 } from '@wb/shared'
@@ -107,11 +106,6 @@ export const api = {
   trashItem: (id: string) => request<void>('DELETE', `/api/items/${enc(id)}`),
   restoreItem: (id: string) => request<void>('POST', `/api/items/${enc(id)}/restore`),
   unplaceItem: (id: string, boardId: string) => request<void>('POST', `/api/items/${enc(id)}/unplace`, { boardId }),
-
-  // Spike A share test page (until Phase 3).
-  reports: () => get<{ reports: ShareReport[] }>('/api/debug/share'),
-  report: (id: string) => get<ShareReport>(`/api/debug/share/${enc(id)}`),
-  sendShare: (form: FormData) => request<ShareReport>('POST', '/api/debug/share', form),
 }
 
 export function formatBytes(size: number): string {

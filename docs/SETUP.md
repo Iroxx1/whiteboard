@@ -112,7 +112,7 @@ Passwort vergessen: In der Verwaltung beim Nutzer auf **Passwort-Link** (einmali
 2. Menü ⋮ → **„App installieren“**. Es muss eine echte Installation sein, keine Verknüpfung; nur dann erscheint „Whiteboard“ im Teilen-Menü.
 3. Die Anmeldung gilt 180 Tage und verlängert sich bei Benutzung von selbst.
 
-Die Teilen-Testseite aus Phase 0 bleibt bis Phase 3 erhalten (`/share`), jetzt mit normaler Anmeldung statt Zugangslink.
+Danach im Teilen-Menü einer beliebigen App „Whiteboard“ wählen: Der Inhalt wird sofort in der Inbox gespeichert. Tipp: „Whiteboard“ im Teilen-Menü lange drücken → **Anpinnen**. In Instagram führt „Teilen über …“ zum Android-Teilen-Menü.
 
 ## Updates
 

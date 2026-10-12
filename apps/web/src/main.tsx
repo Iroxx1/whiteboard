@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { App } from './App.tsx'
 import './index.css'
+import { setupPwa } from './lib/pwa.ts'
 import { installStaleChunkReload } from './lib/staleChunks.ts'
 
 declare global {
@@ -15,11 +16,7 @@ window.EXCALIDRAW_ASSET_PATH = '/'
 
 installStaleChunkReload()
 
-if ('serviceWorker' in navigator && import.meta.env.PROD) {
-  navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch((error: unknown) => {
-    console.error('service worker registration failed', error)
-  })
-}
+setupPwa()
 
 const root = document.getElementById('root')
 if (!root) throw new Error('#root missing')

@@ -16,6 +16,7 @@ import { openDatabase } from './db/index.ts'
 import { registerFileRoutes } from './files/routes.ts'
 import { registerItemRoutes } from './items/routes.ts'
 import { ItemService } from './items/service.ts'
+import { registerShareRoutes } from './items/share.ts'
 import { JobQueue, type QueueOptions } from './jobs/queue.ts'
 import { originGuard } from './lib/originGuard.ts'
 import type { SafeFetchOptions } from './lib/safeFetch.ts'
@@ -23,7 +24,6 @@ import { registerMeRoutes } from './me/routes.ts'
 import { processorJobs } from './processors/index.ts'
 import { RealtimeHub } from './realtime/hub.ts'
 import { attachSocketServer } from './realtime/socket.ts'
-import { registerDebugShareRoutes } from './routes/debugShare.ts'
 import { registerHealthRoutes } from './routes/health.ts'
 import { registerManifestRoute } from './routes/manifest.ts'
 import { registerStatic } from './routes/static.ts'
@@ -106,7 +106,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
   registerBoardRoutes(app, ctx)
   registerFileRoutes(app, ctx)
   registerItemRoutes(app, ctx)
-  registerDebugShareRoutes(app)
+  registerShareRoutes(app, ctx)
   await registerStatic(app, config)
 
   const io = attachSocketServer(app, ctx)

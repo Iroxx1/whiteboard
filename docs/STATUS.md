@@ -9,7 +9,7 @@ Wird vom umsetzenden Modell nach jeder Phase aktualisiert. Phasen und Abnahmekri
 | 0 | Fundament und Risiko-Tests (Spike A: Teilen-Menü am Handy, Spike B: Excalidraw) | ✅ fertig (12.10.2026) |
 | 1 | Whiteboard-Kern (Konten, Boards, Echtzeit-Sync, Dark Mode) | ✅ fertig (12.10.2026), auf CT 118 ausgerollt (`sha-82a447a`) |
 | 2 | Inbox, Verarbeitung und Karten | ✅ fertig (12.10.2026), auf CT 118 ausgerollt (`sha-6745b66`; Nachbesserung `sha-0cf5ebf`: Instagram-Embed, Neuladen nach Updates, Bibliothek ausgeblendet) |
-| 3 | PWA und Teilen-Menü | offen |
+| 3 | PWA und Teilen-Menü | ✅ fertig (12.10.2026), Ausrollen auf CT 118 nach Rückfrage |
 | 4 | Telegram-Bot | offen |
 | 5 | E-Mail über Cloudflare | offen |
 | 6 | Produktivbetrieb und Härtung | offen |
@@ -21,6 +21,18 @@ Wird vom umsetzenden Modell nach jeder Phase aktualisiert. Phasen und Abnahmekri
 ## Offene Fragen an den Auftraggeber
 
 _(keine)_
+
+## Stand Phase 3 (12.10.2026)
+
+- **Teilen-Menü:** Der Service Worker fängt `POST /share-target` ab und legt Titel, Text, Link und Dateien sofort in IndexedDB ab; die Seite `/share` lädt alles gleich hoch (erst Text/Link, dann jede Datei einzeln, jeder Schritt idempotent über `clientShareId`) und zeigt „✓ In der Inbox gespeichert“. Danach lassen sich Titel, Notiz und Board ändern (entprellt, für alle Einträge des Teilens), „Löschen“ und „Fertig“.
+- **Ohne Netz:** Der Inhalt wartet auf dem Handy; Hintergrund-Sync lädt ihn hoch, sobald wieder Verbindung besteht, zusätzlich bei jedem App-Start und beim Wechsel zu „online“. Hinweis „1 Eintrag wartet auf Upload“ in der Handy-Inbox.
+- **Nicht angemeldet:** Anmelden-Knopf, danach geht es automatisch auf `/share` weiter und der Upload läuft.
+- **Server-Fallback:** `POST /share-target` ohne aktiven Service Worker verarbeitet den Upload direkt (mit Anmeldung) bzw. zeigt einen Hinweis.
+- **Board-Wahl:** „Nur Inbox“, zuletzt gewählte Boards (pro Gerät), alle Boards mit Suche.
+- **Handy-Startseite:** Tabs „Inbox“ und „Boards“ (zuletzt benutzter Tab), Inbox-Liste mit „Auf Board legen“, „Notiz bearbeiten“, „Erledigt“, „Löschen“ und „+ Hinzufügen“; auch unter `/inbox`.
+- **Updates:** „Neue Version verfügbar – neu laden“ auf allen Seiten; die App sucht stündlich nach Updates.
+- **Installationshinweis** auf Android-Browsern, die Installation anbieten.
+- **Tests:** Server-Tests für die Upload-Schritte, Wiederholungen und gleichzeitige Uploads; E2E „Teilen über den Service Worker“ inkl. Board-Wahl und Flugmodus.
 
 ## Stand Phase 2 (12.10.2026)
 
@@ -90,6 +102,13 @@ _(keine)_
 | 12.10.2026 | Nach einem Update lädt ein vorher geöffneter Tab einmal automatisch neu, wenn ein nachgeladener Programmteil fehlt (Vite `preloadError`, höchstens einmal pro Minute); der Hinweis „Neue Version verfügbar“ folgt in Phase 3 | Fehler „Bild einfügen geht nicht“ nach dem Phase-2-Update (404 auf alten Excalidraw-Baustein) |
 | 12.10.2026 | Excalidraw-Bibliothek (Knopf „Bibliothek“) ausgeblendet; Vorlagen von libraries.excalidraw.com werden nicht übernommen | Auftraggeber; nicht im Plan |
 | 12.10.2026 | Teilen aus der Instagram-App: Instagrams eigenes Teilen-Menü zeigt nur wenige Apps; „Whiteboard“ erscheint nur im Android-Teilen-Menü (in Instagram über „Teilen über …“/„Mehr“). Bis Phase 3 landet Geteiltes noch auf der Testseite, nicht in der Inbox | Hinweis an den Auftraggeber |
+| 12.10.2026 | Phase 3: Handy-Startseite öffnet den zuletzt benutzten Tab (Inbox oder Boards) | Auftraggeber |
+| 12.10.2026 | Phase 3: „Zuletzt gewählte Boards“ beim Teilen werden pro Gerät im Browser gespeichert | Auftraggeber |
+| 12.10.2026 | Phase 3: Phase-0-Testseite und `/api/debug/share` entfallen; Ausrollen am Phasenende nach Rückfrage; neue Versionen werden erst nach „neu laden“ aktiv | Annahmen, vom Auftraggeber nicht widersprochen |
+| 12.10.2026 | Phase 3: Neue Tabelle `share_requests` hält zusätzlich Gruppe, bereinigte Notiz, Titel, Ziel-Board und Dateianzahl eines Teilens | Upload in mehreren Anfragen (PLAN.md 5.6) braucht diesen Zustand |
+| 12.10.2026 | Phase 3: Beim Teilen von Link und Datei zusammen bekommt der Link den geteilten Titel, die erste Datei den Begleittext als Notiz; ohne Link geht der Titel an eine einzelne Datei | Android schickt Seitentitel + URL |
+| 12.10.2026 | Phase 3: Upload-Schritte eines Teilens laufen auf dem Server nacheinander | Seite und Hintergrund-Sync laden manchmal gleichzeitig hoch; sonst entstünden doppelte Einträge |
+| 12.10.2026 | Phase 3: Einmalige Übergangsregel im Service Worker: Ist noch eine Version ohne Update-Hinweis aktiv (bis Phase 2), übernimmt die neue sofort | sonst bliebe die alte Version, bis alle Tabs bzw. die App geschlossen sind |
 
 ## Manuelle Tests durch den Auftraggeber
 
@@ -124,3 +143,14 @@ _(keine)_
 - [ ] Karten hell und dunkel ansehen
 - [ ] Eine Karte vom Board löschen: steht der Eintrag dann im Archiv? Von dort „Erneut platzieren“
 - [ ] Am Handy: Details öffnen sich als eigene Seite
+
+### Phase 3
+
+- [ ] Neues Image auf CT 118 (macht Claude nach Rückfrage)
+- [ ] Die installierte App einmal öffnen (lädt die neue Version)
+- [ ] Teilen → „Whiteboard“ aus: Chrome (Link), markierter Text, Galerie (ein Foto, mehrere Fotos – bilden sie eine Gruppe?), „Dateien“ (PDF), WhatsApp-Sprachnachricht, Google Drive, YouTube-App, Instagram („Teilen über …“) – erscheint „✓ In der Inbox gespeichert“ und landet alles richtig in der Inbox?
+- [ ] Beim Teilen ein Board wählen: liegt der Inhalt danach im Rahmen „📥 Inbox“ dieses Boards?
+- [ ] Flugmodus an, etwas teilen („wird automatisch hochgeladen“), Flugmodus aus: kommt es von selbst an?
+- [ ] Abmelden, etwas teilen: führt „Anmelden“ zum Login und danach weiter zum gespeicherten Inhalt?
+- [ ] Handy-Startseite: Tabs „Inbox“/„Boards“, merkt sie sich den zuletzt benutzten Tab?
+- [ ] Ein iPhone-HEIC-Foto (falls zur Hand) über „+ Hinzufügen“: wird es angezeigt?

@@ -2,12 +2,14 @@ import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { type BoardSummary, normalizeHashtag } from '@wb/shared'
 import { type FormEvent, useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { Link, useNavigate, useSearchParams } from 'react-router'
 import { de } from '../i18n/de.ts'
 import { api } from '../lib/api.ts'
 import { formatRelative } from '../lib/format.ts'
+import { useMediaQuery } from '../lib/useMediaQuery.ts'
 import { Button, Card, Dialog, FormMessage, TextField } from '../ui/kit.tsx'
 import { Layout } from '../ui/Layout.tsx'
+import { MobileInbox } from './MobileInbox.tsx'
 
 export const BOARDS_KEY = ['boards'] as const
 const TRASH_KEY = ['boards', 'trash'] as const
@@ -135,7 +137,7 @@ function Trash() {
   )
 }
 
-export function DashboardPage() {
+function BoardsOverview() {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const boards = useQuery({ queryKey: BOARDS_KEY, queryFn: () => api.boards() })
@@ -160,7 +162,7 @@ export function DashboardPage() {
   }, [boards.data, search, sort])
 
   return (
-    <Layout>
+    <>
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <h1 className="mr-auto text-2xl font-semibold">{de.dashboard.title}</h1>
         <Button variant="primary" onClick={() => setCreating(true)}>
@@ -238,6 +240,71 @@ export function DashboardPage() {
           />
         )}
       </Dialog>
+    </>
+  )
+}
+
+type HomeTab = 'inbox' | 'boards'
+const TAB_KEY = 'wb.homeTab'
+
+function storedTab(): HomeTab {
+  try {
+    return localStorage.getItem(TAB_KEY) === 'boards' ? 'boards' : 'inbox'
+  } catch {
+    return 'inbox'
+  }
+}
+
+/** `/`: boards; on phones with the tabs Inbox and Boards, opening the last used one (PLAN.md 4.5). */
+export function DashboardPage() {
+  const narrow = useMediaQuery('(max-width: 639px)')
+  const [params, setParams] = useSearchParams()
+  const [tab, setTab] = useState<HomeTab>(() => (params.get('tab') === 'inbox' ? 'inbox' : storedTab()))
+  const choose = (next: HomeTab) => {
+    setTab(next)
+    if (params.has('tab')) setParams({}, { replace: true })
+    try {
+      localStorage.setItem(TAB_KEY, next)
+    } catch {
+      // Private mode: not remembered.
+    }
+  }
+  if (!narrow) {
+    return (
+      <Layout>
+        <BoardsOverview />
+      </Layout>
+    )
+  }
+  return (
+    <Layout>
+      <div
+        className="mb-4 grid grid-cols-2 rounded-lg border border-[var(--wb-border)] bg-[var(--wb-surface)] p-0.5"
+        role="tablist"
+      >
+        {(['inbox', 'boards'] as const).map((key) => (
+          <button
+            key={key}
+            type="button"
+            role="tab"
+            aria-selected={tab === key}
+            onClick={() => choose(key)}
+            className={`rounded-md py-2 text-sm font-medium ${tab === key ? 'bg-[var(--wb-accent)] text-white' : 'text-[var(--wb-muted)]'}`}
+          >
+            {de.mobile.tabs[key]}
+          </button>
+        ))}
+      </div>
+      {tab === 'inbox' ? <MobileInbox /> : <BoardsOverview />}
+    </Layout>
+  )
+}
+
+/** `/inbox`: the phone inbox list on its own page. */
+export function InboxPage() {
+  return (
+    <Layout>
+      <MobileInbox />
     </Layout>
   )
 }

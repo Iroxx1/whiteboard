@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { NavLink } from 'react-router'
 import { de } from '../i18n/de.ts'
 import { useLogout, useMe } from '../lib/auth.tsx'
+import { InstallHint } from './PwaBanners.tsx'
 import { ThemeToggle } from './ThemeToggle.tsx'
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
@@ -42,7 +43,10 @@ export function Layout({ children }: { children: ReactNode }) {
           </button>
         </div>
       </header>
-      <main className="mx-auto max-w-5xl px-4 py-6">{children}</main>
+      <main className="mx-auto max-w-5xl px-4 py-6">
+        <InstallHint />
+        {children}
+      </main>
     </div>
   )
 }

@@ -102,13 +102,17 @@ export class ItemService {
   }
 
   /** Normalises, stores files, creates items and queues their processing (PLAN.md 5.5). */
-  async ingest(payload: IngestPayload): Promise<IngestResult & { unknownHashtags: string[] }> {
+  async ingest(
+    payload: IngestPayload,
+    options: { groupId?: string } = {},
+  ): Promise<IngestResult & { unknownHashtags: string[] }> {
     const normalized = await normalizePayload(payload, this.boardsByHashtag())
     if (normalized.drafts.length === 0) throw new IngestError('empty')
     const targetBoardId =
       normalized.targetBoardId && this.boardExists(normalized.targetBoardId) ? normalized.targetBoardId : null
     const now = Date.now()
-    const groupId = normalized.drafts.length > 1 ? ulid(now) : null
+    // A share uploaded in several requests keeps one group (PLAN.md 5.6).
+    const groupId = options.groupId ?? (normalized.drafts.length > 1 ? ulid(now) : null)
     const created: string[] = []
     const duplicateIds: string[] = []
     const jobsToQueue: { type: string; itemId: string }[] = []

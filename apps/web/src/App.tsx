@@ -5,10 +5,11 @@ import { de } from './i18n/de.ts'
 import { FullPageMessage, RequireAuth } from './lib/auth.tsx'
 import { AdminPage } from './routes/AdminPage.tsx'
 import { InvitePage, LoginPage, ResetPage, SetupPage } from './routes/AuthPages.tsx'
-import { DashboardPage } from './routes/DashboardPage.tsx'
+import { DashboardPage, InboxPage } from './routes/DashboardPage.tsx'
 import { ItemPage } from './routes/ItemPage.tsx'
 import { SettingsPage } from './routes/SettingsPage.tsx'
 import { SharePage } from './routes/SharePage.tsx'
+import { UpdateBanner } from './ui/PwaBanners.tsx'
 
 // Excalidraw is large; load the editor route lazily (PLAN.md 5.13).
 const BoardPage = lazy(() => import('./board/BoardPage.tsx'))
@@ -46,6 +47,14 @@ export function App() {
             }
           />
           <Route
+            path="/inbox"
+            element={
+              <RequireAuth>
+                <InboxPage />
+              </RequireAuth>
+            }
+          />
+          <Route
             path="/i/:itemId"
             element={
               <RequireAuth>
@@ -71,6 +80,7 @@ export function App() {
           />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        <UpdateBanner />
       </BrowserRouter>
     </QueryClientProvider>
   )

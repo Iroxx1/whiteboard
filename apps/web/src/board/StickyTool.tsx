@@ -1,13 +1,9 @@
-import {
-  CaptureUpdateAction,
-  convertToExcalidrawElements,
-  FONT_FAMILY,
-  ROUNDNESS,
-  viewportCoordsToSceneCoords,
-} from '@excalidraw/excalidraw'
+import { CaptureUpdateAction, viewportCoordsToSceneCoords } from '@excalidraw/excalidraw'
 import type { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types'
 import { useState } from 'react'
 import { de } from '../i18n/de.ts'
+import { stickyElements } from './itemElements.ts'
+import { STICKY_MIN_HEIGHT, STICKY_WIDTH } from './layout.ts'
 
 // Pastel colours from PLAN.md 5.3.
 export const STICKY_COLORS = [
@@ -19,8 +15,6 @@ export const STICKY_COLORS = [
   { key: 'purple', value: '#E5DBFF' },
 ] as const
 
-const STICKY_WIDTH = 240
-const STICKY_HEIGHT = 180
 const COLOR_KEY = 'wb.stickyColor'
 
 function storedColor(): string {
@@ -40,32 +34,7 @@ export function addSticky(api: ExcalidrawImperativeAPI, color: string) {
     { clientX: state.offsetLeft + state.width / 2, clientY: state.offsetTop + state.height / 2 },
     state,
   )
-  const elements = convertToExcalidrawElements([
-    {
-      type: 'rectangle',
-      x: center.x - STICKY_WIDTH / 2,
-      y: center.y - STICKY_HEIGHT / 2,
-      width: STICKY_WIDTH,
-      height: STICKY_HEIGHT,
-      backgroundColor: color,
-      strokeColor: 'transparent',
-      fillStyle: 'solid',
-      strokeWidth: 1,
-      roughness: 0,
-      roundness: { type: ROUNDNESS.ADAPTIVE_RADIUS },
-      // The label inherits the container's (transparent) stroke colour unless set explicitly (SPIKES.md).
-      // Excalidraw only creates the bound text for a non-empty label; a space keeps it editable with
-      // these settings (Enter or double-click on the selected note).
-      label: {
-        text: ' ',
-        strokeColor: '#1e1e1e',
-        fontFamily: FONT_FAMILY.Nunito,
-        fontSize: 20,
-        textAlign: 'left',
-        verticalAlign: 'top',
-      },
-    },
-  ])
+  const elements = stickyElements('', color, center.x - STICKY_WIDTH / 2, center.y - STICKY_MIN_HEIGHT / 2)
   const container = elements.find((element) => element.type === 'rectangle')
   api.updateScene({
     elements: [...api.getSceneElementsIncludingDeleted(), ...elements],

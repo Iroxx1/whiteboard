@@ -56,6 +56,8 @@ const newNonce = () => randomInt(0, 2 ** 31)
 export class BoardRooms {
   private readonly rooms = new Map<string, Room>()
   private readonly options: RoomOptions
+  /** Called after every successful save, e.g. to reconcile inbox placements (PLAN.md 5.4). */
+  onSaved: ((boardId: string, elements: SceneElement[]) => void) | undefined
 
   constructor(
     private readonly db: Db,
@@ -224,6 +226,11 @@ export class BoardRooms {
       })
       room.version += 1
       room.dirty = false
+      try {
+        this.onSaved?.(room.id, [...room.elements.values()])
+      } catch (error) {
+        this.log.error({ err: error, boardId: room.id }, 'after-save hook failed')
+      }
       if (now - room.lastListNoticeAt >= LIST_NOTICE_INTERVAL_MS) {
         room.lastListNoticeAt = now
         this.hub.toAll(EVENTS.boardsChanged, { boardId: room.id })

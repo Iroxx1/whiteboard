@@ -5,8 +5,12 @@ import type { AppState, Collaborator, ExcalidrawImperativeAPI, SocketId } from '
 import {
   type BoardAppState,
   type BoardUpdate,
+  type ClaimAck,
   EVENTS,
+  type ItemUpdated,
   type JoinAck,
+  type PlacementDoneAck,
+  type PlacementPending,
   type PresenceBroadcast,
   type PresenceLeave,
   type PresencePointer,
@@ -22,6 +26,10 @@ type Hooks = {
   onStatus: (status: SyncStatus) => void
   /** Elements that arrived from the server (to fetch missing image files). */
   onRemoteElements: (elements: readonly ExcalidrawElement[]) => void
+  onInboxChanged?: () => void
+  onItemUpdated?: (itemId: string) => void
+  /** Items with this board as target that wait in the inbox (join and placement:pending). */
+  onPlacementPending?: (itemIds: string[]) => void
 }
 
 const FLUSH_DELAY_MS = 80
@@ -84,6 +92,11 @@ export class BoardSync {
       this.collaborators.delete(payload.socketId as SocketId)
       this.api.updateScene({ collaborators: new Map(this.collaborators) })
     })
+    this.socket.on(EVENTS.inboxChanged, () => this.hooks.onInboxChanged?.())
+    this.socket.on(EVENTS.itemUpdated, (payload: ItemUpdated) => this.hooks.onItemUpdated?.(payload.itemId))
+    this.socket.on(EVENTS.placementPending, (payload: PlacementPending) => {
+      if (payload.boardId === this.boardId) this.hooks.onPlacementPending?.(payload.itemIds)
+    })
     this.socket.on(EVENTS.boardsChanged, (payload: { boardId?: string; deleted?: boolean }) => {
       if (payload.boardId === this.boardId && payload.deleted) this.hooks.onStatus('deleted')
     })
@@ -120,6 +133,40 @@ export class BoardSync {
     this.hooks.onStatus('connected')
     this.hooks.onRemoteElements(asExcalidraw(scene))
     this.flush()
+    // Data may have changed while disconnected.
+    this.hooks.onInboxChanged?.()
+    if (ack.pendingItemIds.length > 0) this.hooks.onPlacementPending?.(ack.pendingItemIds)
+  }
+
+  // --- placement protocol (PLAN.md 5.4) ---
+
+  async claim(itemId: string): Promise<{ granted: true } | { granted: false; holder: string | null }> {
+    const ack = (await this.socket
+      .timeout(ACK_TIMEOUT_MS)
+      .emitWithAck(EVENTS.placementClaim, { itemId, boardId: this.boardId })) as ClaimAck
+    if (!ack.ok) return { granted: false, holder: null }
+    return ack.granted ? { granted: true } : { granted: false, holder: ack.holder }
+  }
+
+  /** Sends the given elements right away (not throttled), so placement:done finds them on the server. */
+  async sendNow(elementIds: string[]) {
+    const byId = new Map(this.api.getSceneElementsIncludingDeleted().map((element) => [element.id, element]))
+    const elements = elementIds.flatMap((id) => (byId.get(id) as unknown as SceneElement | undefined) ?? [])
+    const ack = (await this.socket
+      .timeout(ACK_TIMEOUT_MS)
+      .emitWithAck(EVENTS.boardUpdate, { boardId: this.boardId, elements })) as UpdateAck
+    if (!ack.ok) throw new Error(ack.error)
+    for (const element of elements) {
+      this.known.set(element.id, element.version)
+      if (byId.get(element.id)?.version === element.version) this.pending.delete(element.id)
+    }
+  }
+
+  async done(itemId: string, elementIds: string[]): Promise<boolean> {
+    const ack = (await this.socket
+      .timeout(ACK_TIMEOUT_MS)
+      .emitWithAck(EVENTS.placementDone, { itemId, boardId: this.boardId, elementIds })) as PlacementDoneAck
+    return ack.ok
   }
 
   /** Called from Excalidraw's onChange. */

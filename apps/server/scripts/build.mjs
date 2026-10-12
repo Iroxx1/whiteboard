@@ -1,5 +1,6 @@
-// Bundles the server into a single ESM file. Native modules stay external; the Docker image ships
-// them via `pnpm deploy` (see infra/docker/Dockerfile).
+// Bundles the server into a single ESM file. Native modules (better-sqlite3, argon2, sharp) and
+// packages that load files or modules at runtime (heic-convert with WebAssembly, file-type) stay
+// external; the Docker image ships them via `pnpm deploy` (see infra/docker/Dockerfile).
 import { build } from 'esbuild'
 
 const common = {
@@ -9,7 +10,7 @@ const common = {
   format: 'esm',
   sourcemap: true,
   legalComments: 'none',
-  external: ['better-sqlite3', '@node-rs/argon2'],
+  external: ['better-sqlite3', '@node-rs/argon2', 'sharp', 'heic-convert', 'file-type'],
   // Some bundled dependencies are CommonJS and call require().
   banner: {
     js: "import { createRequire as __wbCreateRequire } from 'node:module'; const require = __wbCreateRequire(import.meta.url);",

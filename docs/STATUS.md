@@ -8,7 +8,7 @@ Wird vom umsetzenden Modell nach jeder Phase aktualisiert. Phasen und Abnahmekri
 |---|---|---|
 | 0 | Fundament und Risiko-Tests (Spike A: Teilen-Menü am Handy, Spike B: Excalidraw) | ✅ fertig (12.10.2026) |
 | 1 | Whiteboard-Kern (Konten, Boards, Echtzeit-Sync, Dark Mode) | ✅ fertig (12.10.2026), auf CT 118 ausgerollt (`sha-82a447a`) |
-| 2 | Inbox, Verarbeitung und Karten | offen |
+| 2 | Inbox, Verarbeitung und Karten | ✅ fertig (12.10.2026), Ausrollen auf CT 118 nach Rückfrage |
 | 3 | PWA und Teilen-Menü | offen |
 | 4 | Telegram-Bot | offen |
 | 5 | E-Mail über Cloudflare | offen |
@@ -21,6 +21,18 @@ Wird vom umsetzenden Modell nach jeder Phase aktualisiert. Phasen und Abnahmekri
 ## Offene Fragen an den Auftraggeber
 
 _(keine)_
+
+## Stand Phase 2 (12.10.2026)
+
+- **Einträge:** Datenmodell (Einträge, Platzierungen, Texte, Jobs), Ingest-Kern mit Normalisierung nach PLAN.md 5.5 (URLs auch im Text, Tracking-Parameter, Hashtags `#board`/`#inbox`, Gruppen, Duplikate in der Inbox), Dateiablage unter `/data/files/items/<jahr>/<monat>/<id>/`, Art nach Inhalt (file-type) statt Endung.
+- **Verarbeitung:** Job-Queue in SQLite (Wiederholung nach 30 s/5 min/30 min, Parallelität je Typ, höchstens ein schwerer Job, Neustart-fest). Link-Vorschau über `safeFetch` (oEmbed für YouTube/Vimeo/Spotify/TikTok/X, OpenGraph, Titel/Beschreibung, Vorschaubild 800 px, Favicon; Orte aus Google Maps/OSM; blockierende Seiten ergeben eine einfache Karte). Bilder: EXIF-Drehung, HEIC → JPEG, Anzeigeversion 1600 px und Vorschau 400 px ohne Metadaten. PDF: Seitenzahl, Vorschau Seite 1, Text. Audio/Video: Dauer, Standbild. Textdateien: Vorschau und Text.
+- **SSRF-Schutz:** nur http/https auf 80/443, alle aufgelösten Adressen müssen öffentlich sein (auch IPv6/IPv4-mapped), Auflösung beim Verbindungsaufbau mit genau der geprüften Adresse, Weiterleitungen einzeln geprüft (max. 5), Zeit- und Größenlimits; Tests für privates Netz, Weiterleitung auf private IP, DNS-Rebinding und IPv6.
+- **Inbox-Leiste:** Tabs Inbox/Archiv/Papierkorb, Filter, Gruppen (gestapelt), Ziehen aufs Board, „Hier platzieren“, „Alle in Inbox-Bereich legen“, „Erledigt“, „Löschen“, „Wiederherstellen“, „+ Hinzufügen“ (Link/Text/Datei), Anzahl am Knopf, Live-Aktualisierung.
+- **Platzieren:** Protokoll mit Lease (`placement:claim`/`done`/`pending`), automatische Ablage im Rahmen „📥 Inbox“ (4 Spalten, wächst nach unten), Abgleich Platzierungen ↔ Board beim Speichern (gelöscht → Archiv, Kopie → platziert), „Platziert · Rückgängig“.
+- **Darstellung:** Notizen als Haftnotiz (240 px, wächst mit dem Text), Bilder nativ (lange Seite 400 px, Notiz als gruppierte Bildunterschrift), Karten für Links, Video-Links, PDF, Dokumente, Dateien, Audio, Video – hell und dunkel, Platzhalter unter Zoom 0,3, Herkunft „via Web · Maik · 12.10.“. Doppelklick → Details (Desktop: Seitenleiste, Handy: `/i/:id`), Strg/Cmd+Klick öffnet den Link. Link-Symbol an Karten per `pnpm patch` entfernt.
+- **Detailansicht:** Vorschau, Player für Audio/Video, YouTube/Vimeo/Spotify eingebettet, Titel/Notiz bearbeiten, Original öffnen/herunterladen, Texte mit Kopieren-Knopf, Boards, auf denen der Eintrag liegt, „Auf Board legen“, „Erledigt“, „Löschen“.
+- **Papierkorb:** Einträge 30 Tage, danach mit Dateien endgültig gelöscht (Prüfung alle 6 h).
+- **Tests:** 101 Unit-/Integrationstests (Normalisierung, Hashtags, URLs, SSRF, Job-Queue, Raster, Verarbeitung mit echten kleinen Bildern/PDF/Audio/Video, Platzierungsprotokoll mit zwei Clients) und E2E „Ziehen an die Mausposition“ sowie „automatische Ablage genau einmal mit zwei Browsern“.
 
 ## Stand Phase 1 (12.10.2026)
 
@@ -61,6 +73,19 @@ _(keine)_
 | 12.10.2026 | Excalidraw mit `handleKeyboardGlobally` | Tastenkürzel (z. B. Enter zum Beschriften der Haftnotiz) funktionieren auch nach Klick auf die eigene Haftnotiz-Leiste |
 | 12.10.2026 | Haftnotiz startet mit einem Leerzeichen als Text | Excalidraw legt den gebundenen Text (Nunito 20, linksbündig, dunkle Schrift) nur bei nicht-leerem Label an; Enter oder Doppelklick beschriftet |
 | 12.10.2026 | E2E-Tests (Playwright) lokal mit installiertem Chrome, in CI mit Chromium; der Testserver liest den Einrichtungslink aus seinem eigenen Log | kein Browser-Download auf dem Entwicklungs-PC nötig |
+| 12.10.2026 | Phase 2: Bilder aus der Inbox erscheinen mit langer Seite 400 px | Auftraggeber |
+| 12.10.2026 | Phase 2: Notiz-Einträge werden Haftnotizen mit 240 px Breite, mindestens 180 px hoch, wachsen mit dem Text nach unten | Auftraggeber |
+| 12.10.2026 | Phase 2: Papierkorb der Einträge als Tab „Papierkorb“ in der Inbox-Leiste (neben Inbox und Archiv) | Auftraggeber |
+| 12.10.2026 | Phase 2: Ausrollen einmal am Phasenende nach Rückfrage | Auftraggeber |
+| 12.10.2026 | Phase 2: Inbox-Leiste beim Öffnen eines Boards auf dem Desktop angedockt und offen; Videos werden nicht umgewandelt (nicht abspielbare Formate als Download); „+ Hinzufügen“ oben in der Inbox-Leiste | Annahmen, vom Auftraggeber nicht widersprochen |
+| 12.10.2026 | Phase 2: zusätzlicher Filter „Videos“ (Video-Dateien und YouTube/Vimeo-Links) neben den Filtern aus PLAN.md 4.4 | Videos passen sonst in keinen Filter |
+| 12.10.2026 | Phase 2: Kartengrößen für Fälle, die PLAN.md 5.4 nicht nennt: Video-Links 340×240, Dateien ohne Vorschau 340×130, Links in Verarbeitung 340×300 | wie die nächstliegende Kartenart |
+| 12.10.2026 | Phase 2: Archivierte Einträge lassen sich erneut platzieren; „Rückgängig“ legt den Eintrag ohne Ziel-Board zurück in die Inbox (sonst würde er sofort wieder automatisch abgelegt) | PLAN.md 5.4 |
+| 12.10.2026 | Phase 2: Neue Spalte `items.status_before_trash`: „Wiederherstellen“ aus dem Papierkorb bringt den Eintrag dorthin zurück, wo er war | nicht in PLAN.md 5.2 |
+| 12.10.2026 | Phase 2: Die Anzeigeversion eines Bildes ist zugleich die Excalidraw-Datei auf dem Board (`fileId` = Asset-ID, ausgeliefert über `/api/files/:id`) | kein zweites Hochladen beim Platzieren |
+| 12.10.2026 | Phase 2: Detailansicht im Board als eigene Seitenleiste rechts (nicht als Excalidraw-Sidebar) | Excalidraw zeigt nur eine Sidebar gleichzeitig; so bleibt die Inbox offen |
+| 12.10.2026 | Phase 2: sharp, heic-convert und file-type bleiben (wie better-sqlite3 und argon2) außerhalb des Server-Bundles und kommen per `pnpm deploy` ins Image; ffmpeg und poppler-utils sind im Image | native Module bzw. Laden zur Laufzeit |
+| 12.10.2026 | Phase 2: HEIC-Umwandlung ist nicht automatisch getestet (kein HEIC-Encoder für Testdateien); Prüfung mit einem echten Handyfoto in Phase 3 | – |
 
 ## Manuelle Tests durch den Auftraggeber
 
@@ -77,10 +102,21 @@ _(keine)_
 ### Phase 1
 
 - [x] Neues Image auf CT 118 (`sha-82a447a`, `.env` gesichert, `SPIKE_ACCESS_KEY` entfernt, Änderungsprotokoll)
-- [ ] Admin-Konto über den Einrichtungslink anlegen (`docs/SETUP.md` Schritt 5)
-- [ ] Zweite Person (oder zweiter Browser im Inkognito-Fenster) einladen und gemeinsam ein Board bearbeiten: erscheinen Änderungen und Mauszeiger sofort?
-- [ ] Bild per Drag & Drop oder Einfügen aufs Board – sieht die andere Person es auch?
-- [ ] Hell/Dunkel umstellen, abmelden, neu anmelden (anderes Gerät): bleibt die Einstellung?
-- [ ] Haftnotiz-Leiste unten: Farbe wählen, „Haftnotiz“, Enter, Text tippen
-- [ ] Verlauf: ☰ → Verlauf → „Version jetzt speichern“, etwas löschen, Version wiederherstellen (am besten mit zweitem offenem Browser)
-- [ ] Am Handy: `https://board.dittgen.uk` öffnen, anmelden; die installierte App ggf. einmal schließen und neu öffnen
+- [x] Admin-Konto über den Einrichtungslink anlegen (`docs/SETUP.md` Schritt 5)
+- [x] Zweite Person (oder zweiter Browser im Inkognito-Fenster) einladen und gemeinsam ein Board bearbeiten: erscheinen Änderungen und Mauszeiger sofort?
+- [x] Bild per Drag & Drop oder Einfügen aufs Board – sieht die andere Person es auch?
+- [x] Hell/Dunkel umstellen, abmelden, neu anmelden (anderes Gerät): bleibt die Einstellung?
+- [x] Haftnotiz-Leiste unten: Farbe wählen, „Haftnotiz“, Enter, Text tippen
+- [x] Verlauf: ☰ → Verlauf → „Version jetzt speichern“, etwas löschen, Version wiederherstellen (am besten mit zweitem offenem Browser)
+- [x] Am Handy: `https://board.dittgen.uk` öffnen, anmelden; die installierte App ggf. einmal schließen und neu öffnen
+
+### Phase 2
+
+- [ ] Neues Image auf CT 118 (macht Claude nach Rückfrage)
+- [ ] Im Board rechts „📥 Inbox“ → „+ Hinzufügen“: einen Link (z. B. Zeitungsartikel, YouTube-Video), einen Text, ein Foto (gern ein iPhone-HEIC), ein PDF, eine Office-Datei, eine Sprachnachricht und ein kurzes Video hinzufügen – kommen Vorschau, Titel, Seitenzahl, Dauer usw. richtig?
+- [ ] Einträge aufs Board ziehen: landen sie an der Mausposition? „Hier platzieren“ und „Rückgängig“ ausprobieren
+- [ ] Doppelklick auf eine Karte → Details; Video/Audio abspielen; Strg+Klick auf eine Link-Karte öffnet den Link
+- [ ] Mit zwei offenen Browsern auf demselben Board einen Eintrag mit `#boardname` im Text hinzufügen: liegt er genau einmal im Rahmen „📥 Inbox“?
+- [ ] Karten hell und dunkel ansehen
+- [ ] Eine Karte vom Board löschen: steht der Eintrag dann im Archiv? Von dort „Erneut platzieren“
+- [ ] Am Handy: Details öffnen sich als eigene Seite

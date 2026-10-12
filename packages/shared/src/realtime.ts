@@ -8,6 +8,11 @@ export const EVENTS = {
   presenceUpdate: 'presence:update',
   presenceLeave: 'presence:leave',
   boardsChanged: 'boards:changed',
+  inboxChanged: 'inbox:changed',
+  itemUpdated: 'item:updated',
+  placementClaim: 'placement:claim',
+  placementDone: 'placement:done',
+  placementPending: 'placement:pending',
 } as const
 
 /** Limit for one board:update message (PLAN.md 8.5). */
@@ -41,3 +46,12 @@ export type PresenceBroadcast = PresenceUpdate & {
 }
 
 export type PresenceLeave = { boardId: string; socketId: string }
+
+export type ItemUpdated = { itemId: string }
+
+export type PlacementClaim = { itemId: string; boardId: string }
+/** granted: false → `holder` is who placed or is placing it ("Wurde gerade von Anna platziert"). */
+export type ClaimAck = { ok: true; granted: true } | { ok: true; granted: false; holder: string | null } | AckError
+export type PlacementDone = { itemId: string; boardId: string; elementIds: string[] }
+export type PlacementDoneAck = { ok: true } | AckError
+export type PlacementPending = { boardId: string; itemIds: string[] }

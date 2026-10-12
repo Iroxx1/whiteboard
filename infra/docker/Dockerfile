@@ -11,6 +11,7 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/server/package.json apps/server/
 COPY apps/web/package.json apps/web/
 COPY packages/shared/package.json packages/shared/
+COPY patches patches/
 RUN pnpm install --frozen-lockfile
 COPY . .
 RUN pnpm build
@@ -23,9 +24,9 @@ RUN pnpm --filter @wb/server deploy --prod /out \
   && rm -rf ./better-sqlite3@*/node_modules/better-sqlite3/deps ./better-sqlite3@*/node_modules/better-sqlite3/src
 
 FROM node:${NODE_VERSION}-trixie-slim AS runtime
-# Media tools (ffmpeg, poppler, tesseract) are added with the phases that need them (2, 8).
+# ffmpeg/ffprobe (audio, video) and poppler (PDF) since Phase 2; tesseract follows with Phase 8.
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends tini ca-certificates \
+  && apt-get install -y --no-install-recommends tini ca-certificates ffmpeg poppler-utils \
   && rm -rf /var/lib/apt/lists/*
 
 ARG APP_VERSION=dev

@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
 import { ulid } from '@wb/shared'
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, eq, inArray, isNull } from 'drizzle-orm'
 import type { FastifyInstance, FastifyReply } from 'fastify'
 import type { AppContext } from '../context.ts'
 import { assets, boards } from '../db/schema.ts'
@@ -14,13 +14,18 @@ import { sniffBoardImage } from './sniff.ts'
 const FILE_ID_PATTERN = /^[A-Za-z0-9_-]{8,80}$/
 
 /** Headers for serving uploaded content (PLAN.md 8.3). */
-export function setUploadHeaders(reply: FastifyReply, mime: string, filename: string) {
+export function setUploadHeaders(reply: FastifyReply, mime: string, filename: string, download = false) {
   reply.header('X-Content-Type-Options', 'nosniff')
   reply.header('Content-Security-Policy', "sandbox; default-src 'none'")
   reply.type(mime)
   // SVG, HTML, XML and scripts are never shown inline.
-  const inline = /^(image\/(png|jpeg|gif|webp|bmp|avif|x-icon)|application\/pdf|audio\/|video\/)/.test(mime)
-  reply.header('Content-Disposition', `${inline ? 'inline' : 'attachment'}; filename="${filename}"`)
+  const inline =
+    !download && /^(image\/(png|jpeg|gif|webp|bmp|avif|x-icon)|application\/pdf|audio\/|video\/)/.test(mime)
+  const ascii = filename.replace(/[^\x20-\x7e]/g, '_').replace(/["\\]/g, '_')
+  reply.header(
+    'Content-Disposition',
+    `${inline ? 'inline' : 'attachment'}; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(filename)}`,
+  )
 }
 
 /** Board images (PLAN.md 5.3): upload once per Excalidraw fileId, fetch on demand. */
@@ -87,7 +92,8 @@ export function registerFileRoutes(app: FastifyInstance, ctx: AppContext) {
     const asset = db
       .select({ mime: assets.mime, path: assets.path, size: assets.size })
       .from(assets)
-      .where(and(eq(assets.id, request.params.fileId), eq(assets.role, 'board_file')))
+      // Excalidraw uploads and display versions of inbox images placed on a board.
+      .where(and(eq(assets.id, request.params.fileId), inArray(assets.role, ['board_file', 'display'])))
       .get()
     if (!asset) return sendError(reply, 404, 'not_found')
     const file = path.join(filesDir, asset.path)

@@ -1,6 +1,6 @@
 # Betrieb
 
-Updates, Sicherungen, Wiederherstellung und Fehlersuche. Stand: Phase 1. Alle Befehle laufen im Container 118 (`pct enter 118`) im Ordner `/opt/whiteboard`.
+Updates, Sicherungen, Wiederherstellung und Fehlersuche. Stand: Phase 2. Alle Befehle laufen im Container 118 (`pct enter 118`) im Ordner `/opt/whiteboard`.
 
 ## Was liegt wo?
 
@@ -8,7 +8,9 @@ Updates, Sicherungen, Wiederherstellung und Fehlersuche. Stand: Phase 1. Alle Be
 |---|---|
 | `/opt/whiteboard/.env` | Einstellungen und Image-Version (`WB_IMAGE_TAG`) |
 | `/opt/whiteboard/data/db/whiteboard.sqlite` (+ `-wal`, `-shm`) | Datenbank: Konten, Sitzungen, Boards, Verlauf |
-| `/opt/whiteboard/data/files/board/` | Bilder auf den Boards |
+| `/opt/whiteboard/data/files/board/` | Bilder, die direkt aufs Board gezogen oder eingefügt wurden |
+| `/opt/whiteboard/data/files/items/<jahr>/<monat>/<id>/` | Inbox-Einträge: Original, Anzeige- und Vorschauversionen |
+| `/opt/whiteboard/data/tmp/` | laufende Uploads und Verarbeitung (wird beim Start geleert) |
 | `/opt/whiteboard/data/backups/` | automatische Datenbank-Sicherungen vor Updates mit neuen Migrationen |
 
 ## Update
@@ -39,7 +41,7 @@ Beim Stoppen oder Neustarten (`docker compose up -d`, `restart`, `stop`) speiche
 
 - **Proxmox:** CT 118 ist im täglichen Backup-Job (03:00) enthalten. Damit sind Datenbank, Bilder und `.env` gesichert.
 - **Verlauf pro Board:** Die App speichert automatisch Zwischenstände (alle 30 Minuten, wenn sich etwas geändert hat; Aufbewahrung: 48 h alle, dann einer pro Tag für 30 Tage, dann einer pro Woche für 6 Monate). Im Board: Menü ☰ → **Verlauf** → **Wiederherstellen** oder **Version jetzt speichern**.
-- **Papierkorb:** Gelöschte Boards bleiben 30 Tage im Papierkorb (Board-Übersicht unten) und lassen sich wiederherstellen.
+- **Papierkorb:** Gelöschte Boards bleiben 30 Tage im Papierkorb (Board-Übersicht unten), gelöschte Inbox-Einträge 30 Tage im Tab „Papierkorb“ der Inbox-Leiste. Danach löscht die App sie endgültig, bei Einträgen samt Dateien.
 - Tägliche Datenbank-Abzüge innerhalb der App folgen in Phase 6.
 
 ## Datenbank wiederherstellen
@@ -79,6 +81,9 @@ Den Link im Browser öffnen und ein neues Passwort setzen. Danach sind alle ande
 | Im Board steht „Verbindung getrennt“ | WebSocket/Long Polling blockiert? Cache-Regel für `/socket.io/*` in Cloudflare prüfen; `docker compose logs app` |
 | Login sagt „Zu viele Fehlversuche“ | Nach 5 Fehlversuchen pro IP und E-Mail wartet die App 1 Minute, danach jeweils doppelt so lange (höchstens 1 Stunde). Ein Neustart der App setzt das zurück |
 | Einrichtungslink fehlt im Log | Es gibt schon ein Konto. Dann Anmelden oder Passwort-Link über die Kommandozeile |
+| Eintrag bleibt bei „Wird verarbeitet …“ | Die Verarbeitung läuft im Hintergrund nacheinander (Bilder, PDFs und Videos einzeln). Fehlversuche werden nach 30 s, 5 min und 30 min wiederholt; danach steht „Verarbeitung fehlgeschlagen“. Ursache: `docker compose logs app | grep "job failed"` |
+| Link-Karte ohne Bild/Titel | Manche Seiten (Instagram, Amazon …) blockieren Abrufe vom Server; dann gibt es eine einfache Karte mit Domain. Private Adressen im Heimnetz ruft die Vorschau absichtlich nie ab |
+| Video lässt sich nicht abspielen | Das Format kann der Browser nicht abspielen (z. B. manche .mov/.3gp); über „Herunterladen“ öffnen |
 | Bild erscheint bei anderen nicht | Upload fehlgeschlagen (rote Meldung im Board)? Erlaubt sind PNG, JPEG, GIF, WebP, BMP, AVIF, ICO und SVG bis `MAX_UPLOAD_MB` |
 
 Logs enthalten keine Passwörter, Cookies oder Inhalte. Ausnahme ist der Einrichtungslink, solange es noch kein Konto gibt.

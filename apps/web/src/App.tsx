@@ -6,6 +6,7 @@ import { FullPageMessage, RequireAuth } from './lib/auth.tsx'
 import { AdminPage } from './routes/AdminPage.tsx'
 import { InvitePage, LoginPage, ResetPage, SetupPage } from './routes/AuthPages.tsx'
 import { DashboardPage } from './routes/DashboardPage.tsx'
+import { ItemPage } from './routes/ItemPage.tsx'
 import { SettingsPage } from './routes/SettingsPage.tsx'
 import { SharePage } from './routes/SharePage.tsx'
 
@@ -41,6 +42,14 @@ export function App() {
                 <Suspense fallback={<FullPageMessage>{de.board.loading}</FullPageMessage>}>
                   <BoardPage />
                 </Suspense>
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/i/:itemId"
+            element={
+              <RequireAuth>
+                <ItemPage />
               </RequireAuth>
             }
           />

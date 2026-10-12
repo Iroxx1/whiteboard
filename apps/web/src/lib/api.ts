@@ -4,7 +4,12 @@ import type {
   AuthStatus,
   BoardDetail,
   BoardSummary,
+  IngestResult,
   InviteInfo,
+  Item,
+  ItemDetail,
+  ItemList,
+  ItemStatus,
   Me,
   OneTimeLink,
   Role,
@@ -89,6 +94,20 @@ export const api = {
     return request<{ fileId: string }>('POST', `/api/boards/${enc(boardId)}/files`, form)
   },
 
+  items: (status: ItemStatus, cursor?: string) =>
+    get<ItemList>(`/api/items?status=${status}&limit=200${cursor ? `&cursor=${enc(cursor)}` : ''}`),
+  itemsByIds: (ids: string[]) => get<ItemList>(`/api/items?ids=${ids.map(enc).join(',')}`),
+  item: (id: string) => get<ItemDetail>(`/api/items/${enc(id)}`),
+  addItem: (body: { text?: string; url?: string; title?: string } | FormData) =>
+    request<IngestResult>('POST', '/api/items', body),
+  updateItem: (
+    id: string,
+    body: { title?: string | null; note?: string | null; targetBoardId?: string | null; status?: 'inbox' | 'archived' },
+  ) => request<Item>('PATCH', `/api/items/${enc(id)}`, body),
+  trashItem: (id: string) => request<void>('DELETE', `/api/items/${enc(id)}`),
+  restoreItem: (id: string) => request<void>('POST', `/api/items/${enc(id)}/restore`),
+  unplaceItem: (id: string, boardId: string) => request<void>('POST', `/api/items/${enc(id)}/unplace`, { boardId }),
+
   // Spike A share test page (until Phase 3).
   reports: () => get<{ reports: ShareReport[] }>('/api/debug/share'),
   report: (id: string) => get<ShareReport>(`/api/debug/share/${enc(id)}`),
@@ -100,3 +119,6 @@ export function formatBytes(size: number): string {
   if (size < 1024 * 1024) return `${(size / 1024).toLocaleString('de-DE', { maximumFractionDigits: 1 })} KB`
   return `${(size / 1024 / 1024).toLocaleString('de-DE', { maximumFractionDigits: 1 })} MB`
 }
+
+export const assetUrl = (id: string, download = false) =>
+  `/api/assets/${encodeURIComponent(id)}${download ? '?download=1' : ''}`

@@ -14,8 +14,13 @@ import type { Config } from './config.ts'
 import type { AppContext } from './context.ts'
 import { openDatabase } from './db/index.ts'
 import { registerFileRoutes } from './files/routes.ts'
+import { registerItemRoutes } from './items/routes.ts'
+import { ItemService } from './items/service.ts'
+import { JobQueue, type QueueOptions } from './jobs/queue.ts'
 import { originGuard } from './lib/originGuard.ts'
+import type { SafeFetchOptions } from './lib/safeFetch.ts'
 import { registerMeRoutes } from './me/routes.ts'
+import { processorJobs } from './processors/index.ts'
 import { RealtimeHub } from './realtime/hub.ts'
 import { attachSocketServer } from './realtime/socket.ts'
 import { registerDebugShareRoutes } from './routes/debugShare.ts'
@@ -27,6 +32,9 @@ const MAINTENANCE_INTERVAL_MS = 6 * 60 * 60 * 1000
 
 export type BuildOptions = {
   rooms?: Partial<RoomOptions>
+  queue?: Partial<QueueOptions>
+  /** Tests: let the link preview reach a local test server. */
+  fetchOptions?: Partial<SafeFetchOptions>
   /** Tests: receive the JSON log lines (e.g. to read the setup link). */
   logStream?: { write: (line: string) => void }
 }
@@ -57,6 +65,14 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
 
   const database = await openDatabase(config.DATA_DIR, config.MIGRATIONS_DIR, app.log)
   const hub = new RealtimeHub()
+  const items = new ItemService(database.db, hub, app.log, config.DATA_DIR)
+  const queue = new JobQueue(
+    database.db,
+    app.log,
+    processorJobs({ items, tmpDir, ...(options.fetchOptions ? { fetchOptions: options.fetchOptions } : {}) }),
+    options.queue,
+  )
+  items.attachQueue(queue)
   const ctx: AppContext = {
     config,
     log: app.log,
@@ -65,7 +81,10 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
     setup: new SetupToken(database.db, config.PUBLIC_URL, app.log),
     rooms: new BoardRooms(database.db, hub, app.log, options.rooms),
     hub,
+    items,
+    queue,
   }
+  ctx.rooms.onSaved = (boardId, elements) => items.reconcileBoard(boardId, elements)
 
   await app.register(fastifyCookie)
   await app.register(fastifyMultipart, {
@@ -86,6 +105,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
   registerAdminRoutes(app, ctx)
   registerBoardRoutes(app, ctx)
   registerFileRoutes(app, ctx)
+  registerItemRoutes(app, ctx)
   registerDebugShareRoutes(app)
   await registerStatic(app, config)
 
@@ -97,6 +117,9 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
       ctx.sessions.purgeExpired()
       const purged = purgeTrash(database.db)
       if (purged > 0) app.log.info({ purged }, 'boards removed from trash')
+      const purgedItems = items.purgeTrash()
+      if (purgedItems > 0) app.log.info({ purged: purgedItems }, 'items removed from trash')
+      queue.purgeFinished()
     } catch (error) {
       app.log.error({ err: error }, 'maintenance failed')
     }
@@ -107,6 +130,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
   app.addHook('onReady', async () => {
     maintenance()
     ctx.setup.init()
+    queue.start()
   })
 
   // Shutdown (SIGTERM): persist all open boards, then close the database (PLAN.md 5.3).
@@ -116,6 +140,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
     io.disconnectSockets(true)
     io.engine.close()
     ctx.rooms.close()
+    await queue.stop()
   })
   app.addHook('onClose', async () => {
     database.sqlite.close()

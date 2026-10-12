@@ -1,7 +1,7 @@
 // SQLite schema (PLAN.md 5.2). IDs are ULIDs, timestamps are UTC milliseconds.
 // Tables for later phases (items, jobs, Telegram, e-mail, search) are added with those phases.
 import { sql } from 'drizzle-orm'
-import { blob, index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
+import { blob, index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
 
 export const users = sqliteTable('users', {
   id: text('id').primaryKey(),
@@ -113,5 +113,97 @@ export const assets = sqliteTable(
     path: text('path').notNull(),
     createdAt: integer('created_at').notNull().default(sql`(unixepoch() * 1000)`),
   },
-  (table) => [index('assets_board_idx').on(table.boardId)],
+  (table) => [index('assets_board_idx').on(table.boardId), index('assets_item_idx').on(table.itemId)],
+)
+
+// --- Phase 2: inbox items, processing jobs (PLAN.md 5.2, 5.5) ---
+
+export const items = sqliteTable(
+  'items',
+  {
+    id: text('id').primaryKey(),
+    createdAt: integer('created_at').notNull(),
+    createdBy: text('created_by').references(() => users.id, { onDelete: 'set null' }),
+    source: text('source', { enum: ['pwa', 'telegram', 'email', 'web'] }).notNull(),
+    kind: text('kind', { enum: ['note', 'link', 'image', 'pdf', 'document', 'audio', 'video', 'file'] }).notNull(),
+    status: text('status', { enum: ['inbox', 'placed', 'archived', 'trashed'] })
+      .notNull()
+      .default('inbox'),
+    title: text('title'),
+    note: text('note'),
+    url: text('url'),
+    urlNormalized: text('url_normalized'),
+    groupId: text('group_id'),
+    targetBoardId: text('target_board_id').references(() => boards.id, { onDelete: 'set null' }),
+    leaseOwner: text('lease_owner'),
+    leaseUntil: integer('lease_until'),
+    processing: text('processing', { enum: ['pending', 'ready', 'failed'] })
+      .notNull()
+      .default('pending'),
+    processingError: text('processing_error'),
+    // Kind-specific metadata, see ItemMeta in @wb/shared.
+    metaJson: text('meta_json').notNull().default('{}'),
+    updatedAt: integer('updated_at').notNull(),
+    trashedAt: integer('trashed_at'),
+    // Status before moving to the trash, so "restore" puts it back where it was.
+    statusBeforeTrash: text('status_before_trash', { enum: ['inbox', 'placed', 'archived'] }),
+  },
+  (table) => [
+    index('items_status_idx').on(table.status, table.createdAt),
+    index('items_url_idx').on(table.urlNormalized),
+    index('items_group_idx').on(table.groupId),
+    index('items_target_idx').on(table.targetBoardId),
+  ],
+)
+
+export const itemPlacements = sqliteTable(
+  'item_placements',
+  {
+    itemId: text('item_id')
+      .notNull()
+      .references(() => items.id, { onDelete: 'cascade' }),
+    boardId: text('board_id')
+      .notNull()
+      .references(() => boards.id, { onDelete: 'cascade' }),
+    elementId: text('element_id').notNull(),
+    placedAt: integer('placed_at').notNull(),
+    placedBy: text('placed_by').references(() => users.id, { onDelete: 'set null' }),
+  },
+  (table) => [
+    uniqueIndex('item_placements_unique').on(table.boardId, table.elementId),
+    index('item_placements_item_idx').on(table.itemId),
+  ],
+)
+
+export const itemTexts = sqliteTable(
+  'item_texts',
+  {
+    itemId: text('item_id')
+      .notNull()
+      .references(() => items.id, { onDelete: 'cascade' }),
+    kind: text('kind', { enum: ['article', 'pdf', 'ocr', 'transcript', 'doc'] }).notNull(),
+    text: text('text').notNull(),
+    createdAt: integer('created_at').notNull(),
+  },
+  (table) => [uniqueIndex('item_texts_unique').on(table.itemId, table.kind)],
+)
+
+export const jobs = sqliteTable(
+  'jobs',
+  {
+    id: text('id').primaryKey(),
+    type: text('type').notNull(),
+    payloadJson: text('payload_json').notNull(),
+    status: text('status', { enum: ['queued', 'running', 'done', 'failed'] })
+      .notNull()
+      .default('queued'),
+    priority: integer('priority').notNull().default(0),
+    attempts: integer('attempts').notNull().default(0),
+    maxAttempts: integer('max_attempts').notNull().default(3),
+    runAfter: integer('run_after').notNull(),
+    startedAt: integer('started_at'),
+    finishedAt: integer('finished_at'),
+    lastError: text('last_error'),
+  },
+  (table) => [index('jobs_status_idx').on(table.status, table.runAfter)],
 )

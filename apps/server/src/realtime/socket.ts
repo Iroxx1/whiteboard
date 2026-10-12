@@ -1,8 +1,10 @@
 import {
   type AckError,
+  type ClaimAck,
   EVENTS,
   type JoinAck,
   MAX_MESSAGE_BYTES,
+  type PlacementDoneAck,
   type PresenceBroadcast,
   type PresenceLeave,
   type UpdateAck,
@@ -18,6 +20,8 @@ import { boardRoom, sessionRoom, userRoom } from './hub.ts'
 type SocketData = { user: SessionUser; sessionId: string; boards: Set<string> }
 
 const boardIdSchema = z.object({ boardId: z.string().min(1).max(40) })
+const placementSchema = z.object({ itemId: z.string().min(1).max(40), boardId: z.string().min(1).max(40) })
+const placementDoneSchema = placementSchema.extend({ elementIds: z.array(z.string().max(100)).min(1).max(50) })
 const presenceSchema = z.object({
   boardId: z.string().min(1).max(40),
   pointer: z.object({ x: z.number(), y: z.number(), tool: z.enum(['pointer', 'laser']) }).nullable(),
@@ -108,13 +112,12 @@ export function attachSocketServer(app: FastifyInstance, ctx: AppContext): Serve
         if (!state) return { ok: false, error: 'not_found' }
         data.boards.add(boardId)
         void socket.join(boardRoom(boardId))
-        // pendingItemIds: automatic placement of inbox items arrives in Phase 2.
         return {
           ok: true,
           version: state.version,
           elements: state.elements,
           appState: state.appState,
-          pendingItemIds: [],
+          pendingItemIds: ctx.items.pendingFor(boardId),
         }
       }),
     )
@@ -138,6 +141,42 @@ export function attachSocketServer(app: FastifyInstance, ctx: AppContext): Serve
           socket.to(boardRoom(boardId)).emit(EVENTS.boardUpdate, { boardId, ...result })
         }
         return { ok: true }
+      }),
+    )
+
+    // Placement protocol (PLAN.md 5.4): claim a lease, insert the elements, report them as done.
+    socket.on(EVENTS.placementClaim, (payload: unknown, ack: Ack<ClaimAck>) =>
+      handle(EVENTS.placementClaim, ack, (): ClaimAck => {
+        const parsed = placementSchema.safeParse(payload)
+        if (!parsed.success) return invalid
+        const { itemId, boardId } = parsed.data
+        if (!data.boards.has(boardId)) return { ok: false, error: 'not_joined' }
+        if (ctx.items.claim(itemId, socket.id)) return { ok: true, granted: true }
+        const holderSocket = ctx.items.leaseHolder(itemId)
+        const holder = holderSocket
+          ? (io.sockets.sockets.get(holderSocket)?.data as SocketData | undefined)?.user.name
+          : null
+        return { ok: true, granted: false, holder: holder ?? ctx.items.lastPlacedBy(itemId) }
+      }),
+    )
+
+    socket.on(EVENTS.placementDone, (payload: unknown, ack: Ack<PlacementDoneAck>) =>
+      handle(EVENTS.placementDone, ack, (): PlacementDoneAck => {
+        const parsed = placementDoneSchema.safeParse(payload)
+        if (!parsed.success) return invalid
+        const { itemId, boardId, elementIds } = parsed.data
+        if (!data.boards.has(boardId)) return { ok: false, error: 'not_joined' }
+        // The elements must already be in the board state (sent before via board:update).
+        const byId = new Map(ctx.rooms.state(boardId)?.elements.map((element) => [element.id, element]))
+        const present = elementIds.every((id) => {
+          const element = byId.get(id)
+          const wb = (element?.customData as { wb?: { itemId?: string } } | undefined)?.wb
+          return element !== undefined && !element.isDeleted && wb?.itemId === itemId
+        })
+        if (!present) return invalid
+        return ctx.items.markPlaced(itemId, boardId, elementIds, user.id, socket.id)
+          ? { ok: true }
+          : { ok: false, error: 'not_found' }
       }),
     )
 

@@ -9,7 +9,7 @@ Wird vom umsetzenden Modell nach jeder Phase aktualisiert. Phasen und Abnahmekri
 | 0 | Fundament und Risiko-Tests (Spike A: Teilen-Menü am Handy, Spike B: Excalidraw) | ✅ fertig (12.10.2026) |
 | 1 | Whiteboard-Kern (Konten, Boards, Echtzeit-Sync, Dark Mode) | ✅ fertig (12.10.2026), auf CT 118 ausgerollt (`sha-82a447a`) |
 | 2 | Inbox, Verarbeitung und Karten | ✅ fertig (12.10.2026), auf CT 118 ausgerollt (`sha-6745b66`; Nachbesserung `sha-0cf5ebf`: Instagram-Embed, Neuladen nach Updates, Bibliothek ausgeblendet) |
-| 3 | PWA und Teilen-Menü | ✅ fertig (12.10.2026), Ausrollen auf CT 118 nach Rückfrage |
+| 3 | PWA und Teilen-Menü | ✅ fertig (12.10.2026), auf CT 118 ausgerollt (`sha-9464792`) |
 | 4 | Telegram-Bot | offen |
 | 5 | E-Mail über Cloudflare | offen |
 | 6 | Produktivbetrieb und Härtung | offen |
@@ -146,7 +146,7 @@ _(keine)_
 
 ### Phase 3
 
-- [ ] Neues Image auf CT 118 (macht Claude nach Rückfrage)
+- [x] Neues Image auf CT 118 (`sha-9464792`, `.env` gesichert, Änderungsprotokoll)
 - [ ] Die installierte App einmal öffnen (lädt die neue Version)
 - [ ] Teilen → „Whiteboard“ aus: Chrome (Link), markierter Text, Galerie (ein Foto, mehrere Fotos – bilden sie eine Gruppe?), „Dateien“ (PDF), WhatsApp-Sprachnachricht, Google Drive, YouTube-App, Instagram („Teilen über …“) – erscheint „✓ In der Inbox gespeichert“ und landet alles richtig in der Inbox?
 - [ ] Beim Teilen ein Board wählen: liegt der Inhalt danach im Rahmen „📥 Inbox“ dieses Boards?

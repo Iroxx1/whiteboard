@@ -6,7 +6,7 @@ Wird vom umsetzenden Modell nach jeder Phase aktualisiert. Phasen und Abnahmekri
 
 | Phase | Inhalt | Status |
 |---|---|---|
-| 0 | Fundament und Risiko-Tests (Spike A: Teilen-Menü am Handy, Spike B: Excalidraw) | offen |
+| 0 | Fundament und Risiko-Tests (Spike A: Teilen-Menü am Handy, Spike B: Excalidraw) | in Arbeit: Grundgerüst, CI und Spike B fertig; Spike A wartet auf den Handy-Test; offene Fragen siehe unten |
 | 1 | Whiteboard-Kern (Konten, Boards, Echtzeit-Sync, Dark Mode) | offen |
 | 2 | Inbox, Verarbeitung und Karten | offen |
 | 3 | PWA und Teilen-Menü | offen |
@@ -20,15 +20,33 @@ Wird vom umsetzenden Modell nach jeder Phase aktualisiert. Phasen und Abnahmekri
 
 ## Offene Fragen an den Auftraggeber
 
-- **Domain:** Wie heißt die Domain bei Cloudflare, und welche Subdomain soll das Whiteboard bekommen (Vorschlag: `board.<domain>`)? Wird in Phase 0 benötigt.
-- **App-Name:** Name im Teilen-Menü (Vorschlag: „Whiteboard“).
-- **Prozessor-Architektur des Mini-PCs:** x86-64 oder ARM?
-- **Sichtbarkeit des GitHub-Repos:** privat oder öffentlich? Bei privatem Repo braucht die VM ein Token für GHCR.
+Aus Spike B (Details in `docs/SPIKES.md`), vor Phase 1 zu klären:
+
+- **Haftnotizen im Dark Mode:** Excalidraw invertiert die Zeichenfläche; Pastellgelb wird dunkles Oliv. So lassen oder anders lösen?
+- **Karten immer oben:** Karten (Links, PDFs, Audio, Video) liegen immer über gezeichneten Elementen. Akzeptabel?
+- **Link-Symbol an jeder Karte:** Excalidraw zeichnet ein kleines Link-Symbol an jede Karte. So lassen oder per Patch der Bibliothek entfernen?
 
 ## Entscheidungen während der Umsetzung
 
-_(noch keine)_
+| Datum | Entscheidung | Grund |
+|---|---|---|
+| 12.10.2026 | **LXC-Container (CT 118) mit Docker statt eigener VM** (Abweichung von PLAN.md 1 und 7.1, vom Auftraggeber entschieden) | Auf dem Host sind nur ~4 GB RAM frei; die übrigen Docker-Dienste laufen ebenfalls als LXC. Whisper (Phase 9) dann ggf. knapp → neu bewerten. |
+| 12.10.2026 | **Bestehender Cloudflare-Tunnel** (Connector in Home Assistant) statt eigenem `cloudflared`-Container (Abweichung von PLAN.md 3 und 7.2, vom Auftraggeber entschieden) | Einheitlich mit den anderen Diensten. Folge: Port 3000 ist im LAN veröffentlicht (`WB_BIND=0.0.0.0`), vertrauter Proxy ist 192.168.1.193. Der Plan-Weg bleibt per Compose-Profil `tunnel` möglich. |
+| 12.10.2026 | Domain `board.dittgen.uk`, App-Name „Whiteboard“ | Vorschläge aus dem Plan bestätigt |
+| 12.10.2026 | Prozessor x86-64; Repo öffentlich (GHCR-Image ohne Token abrufbar) | geprüft |
+| 12.10.2026 | Entwicklung über Claude Code auf dem PC des Auftraggebers, Branch `main` direkt | vom Auftraggeber gewählt |
+| 12.10.2026 | TypeScript 7.0, Biome (statt ESLint + Prettier), pnpm 12 | TS 7 funktioniert mit allen Werkzeugen; Biome ist ein Werkzeug statt zwei |
+| 12.10.2026 | Phase-0-Zugang über `SPIKE_ACCESS_KEY` + Cookie | PLAN.md 8.1 „Auth überall“ gilt ab dem ersten öffentlichen Start; echte Konten kommen erst in Phase 1 |
+| 12.10.2026 | Server wird mit esbuild zu einer Datei gebündelt; Laufzeit-Image ohne `node_modules` | kleines Image; ändert sich, sobald native Module dazukommen (better-sqlite3, sharp – Phase 1/2) |
+| 12.10.2026 | Service Worker cacht vorab nur App-Shell und Schriften (~0,5 MB); Excalidraw-Teile beim ersten Gebrauch | vollständiger Precache wären ~8 MB auf jedem Handy |
+| 12.10.2026 | Medienwerkzeuge (ffmpeg, poppler, tesseract) erst mit Phase 2/8 ins Image | in Phase 0 nicht gebraucht |
 
 ## Manuelle Tests durch den Auftraggeber
 
-_(pro Phase hier als Checkliste ergänzen)_
+### Phase 0
+
+- [ ] Cloudflare: Public Hostname `board.dittgen.uk` → `http://<IP CT 118>:3000` im bestehenden Tunnel anlegen; Rocket Loader aus, Cache-Regel (`docs/SETUP.md` Schritt 4)
+- [ ] Fritz!Box: IP von CT 118 fest zuweisen
+- [ ] Handy: Zugangslink öffnen, App installieren, alle Fälle aus `docs/SPIKES.md` (Spike A) durchspielen
+- [ ] Optional: `/spike/excalidraw` auf Tablet/Handy öffnen, „300 Karten“ antippen und verschieben – flüssig?
+- [ ] Die drei offenen Fragen oben beantworten

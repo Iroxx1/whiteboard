@@ -28,4 +28,17 @@ Dieses Projekt ist ein selbst gehostetes, Miro-ähnliches Whiteboard auf Excalid
 
 ## Befehle
 
-Wird in Phase 0 ergänzt, sobald das Grundgerüst steht, z. B. `pnpm install`, `pnpm dev`, `pnpm test`, `pnpm lint`, `pnpm typecheck`, `pnpm build`, `docker compose …`.
+Node 24, pnpm über corepack (`corepack enable`; Version steht in `package.json` → `packageManager`).
+
+| Befehl | Zweck |
+|---|---|
+| `pnpm install` | Abhängigkeiten (Builds nur für die Pakete in `pnpm-workspace.yaml` → `allowBuilds`) |
+| `pnpm dev` | Server (`:3000`, tsx watch) und Web (Vite `:5173`, Proxy auf den Server) |
+| `pnpm test` | Vitest für alle Pakete |
+| `pnpm lint` / `pnpm format` | Biome prüfen / korrigieren |
+| `pnpm typecheck` | `tsc` je Paket (Web zusätzlich Service Worker mit `tsconfig.sw.json`) |
+| `pnpm build` | Web (Vite + Service Worker) und Server (esbuild-Bundle nach `apps/server/dist`) |
+| `pnpm start` | gebauten Server starten (braucht ENV, siehe `infra/compose/.env.example`) |
+| `docker build -f infra/docker/Dockerfile .` | Image lokal bauen (sonst baut es `release.yml` bei Push auf `main`) |
+
+Aufbau: `apps/server` (Fastify), `apps/web` (React/Vite/PWA), `packages/shared` (Typen, IDs), `infra/` (Docker, Compose). Betrieb: CT 118 auf Proxmox, siehe `docs/SETUP.md` (Abweichungen vom Plan in `docs/STATUS.md`).

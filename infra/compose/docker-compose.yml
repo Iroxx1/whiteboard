@@ -1,0 +1,36 @@
+# Whiteboard stack. On the server: /opt/whiteboard/docker-compose.yml with .env next to it.
+# Setup and operation: docs/SETUP.md and docs/BETRIEB.md.
+services:
+  app:
+    # Pin to a sha-<short> tag in .env (WB_IMAGE_TAG) so updates happen deliberately.
+    image: ghcr.io/iroxx1/whiteboard:${WB_IMAGE_TAG:-latest}
+    env_file: .env
+    environment:
+      NODE_ENV: production
+    volumes:
+      - ./data:/data
+    # Reachable from the LAN because the Cloudflare connector runs on another host (see SETUP.md).
+    # Set WB_BIND=127.0.0.1 when cloudflared runs in this stack (profile "tunnel").
+    ports:
+      - "${WB_BIND:-127.0.0.1}:3000:3000"
+    restart: unless-stopped
+    mem_limit: 1g
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+  # Optional: own Cloudflare tunnel inside this stack (PLAN.md 7.2). Start with --profile tunnel.
+  cloudflared:
+    image: cloudflare/cloudflared:2026.10.0
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${CF_TUNNEL_TOKEN:-}
+    restart: unless-stopped
+    profiles: ["tunnel"]
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"

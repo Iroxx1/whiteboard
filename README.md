@@ -18,10 +18,12 @@ Aus der Inbox zieht man Inhalte per Drag & Drop aufs Board. Alternativ wählt ma
 
 ## Status
 
-Planung abgeschlossen, Umsetzung noch nicht begonnen.
+Phase 0 (Grundgerüst und Risiko-Tests) in Arbeit.
 
 - [`docs/PLAN.md`](docs/PLAN.md): vollständiger Umsetzungsplan (Anforderungen, Architektur, Phasen, Abnahmekriterien)
-- [`docs/STATUS.md`](docs/STATUS.md): Fortschritt
+- [`docs/STATUS.md`](docs/STATUS.md): Fortschritt und Entscheidungen
+- [`docs/SPIKES.md`](docs/SPIKES.md): Ergebnisse der Risiko-Tests
+- [`docs/SETUP.md`](docs/SETUP.md): Einrichtung auf Proxmox
 - [`CLAUDE.md`](CLAUDE.md): Arbeitsregeln für das umsetzende Claude-Modell
 
 ## Umsetzung starten

@@ -6,7 +6,7 @@ Wird vom umsetzenden Modell nach jeder Phase aktualisiert. Phasen und Abnahmekri
 
 | Phase | Inhalt | Status |
 |---|---|---|
-| 0 | Fundament und Risiko-Tests (Spike A: Teilen-Menü am Handy, Spike B: Excalidraw) | in Arbeit: Grundgerüst, CI und Spike B fertig; Spike A wartet auf den Handy-Test; offene Fragen siehe unten |
+| 0 | Fundament und Risiko-Tests (Spike A: Teilen-Menü am Handy, Spike B: Excalidraw) | fertig bis auf die offenen Fragen unten (Spike A am Handy bestanden, Spike B bestätigt, CI grün, Image in GHCR) |
 | 1 | Whiteboard-Kern (Konten, Boards, Echtzeit-Sync, Dark Mode) | offen |
 | 2 | Inbox, Verarbeitung und Karten | offen |
 | 3 | PWA und Teilen-Menü | offen |
@@ -46,9 +46,9 @@ Aus Spike B (Details in `docs/SPIKES.md`), vor Phase 1 zu klären:
 ### Phase 0
 
 - [x] CT 118 angelegt (192.168.1.151), App läuft (`sha-b43b8a6`), im täglichen Proxmox-Backup
-- [ ] Cloudflare: Public Hostname `board.dittgen.uk` → `http://192.168.1.151:3000` im bestehenden Tunnel anlegen; Rocket Loader aus, Cache-Regel (`docs/SETUP.md` Schritt 4)
-- [ ] Fritz!Box: IP 192.168.1.151 für CT 118 fest zuweisen
+- [x] Cloudflare: Public Hostname `board.dittgen.uk` → `http://192.168.1.151:3000` im bestehenden Tunnel anlegen; Rocket Loader aus, Cache-Regel (`docs/SETUP.md` Schritt 4)
+- [x] Fritz!Box: IP 192.168.1.151 für CT 118 fest zuweisen
 - [ ] GitHub: Standard-Branch des Repos auf `main` umstellen (Settings → General → Default branch)
-- [ ] Handy: Zugangslink öffnen, App installieren, alle Fälle aus `docs/SPIKES.md` (Spike A) durchspielen
+- [x] Handy: Zugangslink, App installiert, Link aus Chrome geteilt (weitere Fälle folgen in Phase 3)
 - [ ] Optional: `/spike/excalidraw` auf Tablet/Handy öffnen, „300 Karten“ antippen und verschieben – flüssig?
 - [ ] Die drei offenen Fragen oben beantworten

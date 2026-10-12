@@ -1,4 +1,4 @@
-# Spikes (Phase 0)
+ nicht getestet | nicht getestet | nicht getestet | nicht getestet | nicht getestet | nicht getestet | nicht getestet |# Spikes (Phase 0)
 
 Ergebnisse der Risiko-Tests aus PLAN.md Abschnitt 9, Phase 0. Abweichungen vom Plan sind markiert und werden vor Phase 1 mit dem Auftraggeber besprochen.
 
@@ -14,13 +14,13 @@ Ergebnisse der Risiko-Tests aus PLAN.md Abschnitt 9, Phase 0. Abweichungen vom P
 
 **Lokal geprüft (Chrome Desktop, 12.10.2026):** Service-Worker-Abfang, IndexedDB, Umleitung, Upload und Anzeige funktionieren mit Text, URL und zwei Dateien (`image/jpeg`, `audio/ogg`).
 
-**Test am Handy (offen, durch den Auftraggeber):**
+**Test am Handy (12.10.2026, Android 10, Chrome 155):**
 
 | # | Fall | Ergebnis |
 |---|---|---|
-| 1 | Installation als App (nicht nur Verknüpfung) | offen |
-| 2 | „Whiteboard“ erscheint im Teilen-Menü | offen |
-| 3a | Link aus Chrome | offen |
+| 1 | Installation als App (nicht nur Verknüpfung) | ✅ |
+| 2 | „Whiteboard“ erscheint im Teilen-Menü | ✅ |
+| 3a | Link aus Chrome | ✅ über den Service Worker; Seitentitel in `title`, **URL in `text`** (`url` leer) |
 | 3b | markierter Text | offen |
 | 3c | ein Foto aus der Galerie | offen |
 | 3d | mehrere Fotos | offen |
@@ -28,7 +28,9 @@ Ergebnisse der Risiko-Tests aus PLAN.md Abschnitt 9, Phase 0. Abweichungen vom P
 | 3f | WhatsApp-Sprachnachricht | offen |
 | 3g | Datei aus Google Drive | offen |
 | 3h | YouTube-Link aus der YouTube-App | offen |
-| 4 | `accept: "*/*"` funktioniert (z. B. `.docx`, `.zip`) | offen |
+| 4 | `accept: "*/*"` funktioniert (z. B. `.docx`, `.zip`) | nicht getestet |
+
+**Bewertung:** Das Hauptrisiko ist ausgeräumt: Die PWA lässt sich installieren und erscheint im Teilen-Menü. Wie im Plan erwartet, packt Android die URL in `text` – die Normalisierung (PLAN.md 5.5) muss URLs dort suchen. Dateien (Fotos, PDF, Audio, `*/*`) wurden auf Wunsch des Auftraggebers nicht einzeln getestet; sie werden in Phase 3 bei der Abnahme mitgeprüft.
 
 Die empfangenen Felder stehen danach auf der Startseite unter „Zuletzt empfangen“ (nur im Speicher, gehen bei Neustart verloren).
 

@@ -8,7 +8,7 @@ Wird vom umsetzenden Modell nach jeder Phase aktualisiert. Phasen und Abnahmekri
 |---|---|---|
 | 0 | Fundament und Risiko-Tests (Spike A: Teilen-Menü am Handy, Spike B: Excalidraw) | ✅ fertig (12.10.2026) |
 | 1 | Whiteboard-Kern (Konten, Boards, Echtzeit-Sync, Dark Mode) | ✅ fertig (12.10.2026), auf CT 118 ausgerollt (`sha-82a447a`) |
-| 2 | Inbox, Verarbeitung und Karten | ✅ fertig (12.10.2026), Ausrollen auf CT 118 nach Rückfrage |
+| 2 | Inbox, Verarbeitung und Karten | ✅ fertig (12.10.2026), auf CT 118 ausgerollt (`sha-6745b66`) |
 | 3 | PWA und Teilen-Menü | offen |
 | 4 | Telegram-Bot | offen |
 | 5 | E-Mail über Cloudflare | offen |
@@ -112,7 +112,7 @@ _(keine)_
 
 ### Phase 2
 
-- [ ] Neues Image auf CT 118 (macht Claude nach Rückfrage)
+- [x] Neues Image auf CT 118 (`sha-6745b66`, `.env` gesichert, Änderungsprotokoll)
 - [ ] Im Board rechts „📥 Inbox“ → „+ Hinzufügen“: einen Link (z. B. Zeitungsartikel, YouTube-Video), einen Text, ein Foto (gern ein iPhone-HEIC), ein PDF, eine Office-Datei, eine Sprachnachricht und ein kurzes Video hinzufügen – kommen Vorschau, Titel, Seitenzahl, Dauer usw. richtig?
 - [ ] Einträge aufs Board ziehen: landen sie an der Mausposition? „Hier platzieren“ und „Rückgängig“ ausprobieren
 - [ ] Doppelklick auf eine Karte → Details; Video/Audio abspielen; Strg+Klick auf eine Link-Karte öffnet den Link

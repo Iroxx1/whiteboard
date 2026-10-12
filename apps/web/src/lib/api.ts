@@ -1,22 +1,98 @@
-import type { ShareReport } from '@wb/shared'
-
-async function json<T>(response: Response): Promise<T> {
-  if (!response.ok) throw new ApiError(response.status)
-  return (await response.json()) as T
-}
+import type {
+  AdminUser,
+  ApiErrorCode,
+  AuthStatus,
+  BoardDetail,
+  BoardSummary,
+  InviteInfo,
+  Me,
+  OneTimeLink,
+  Role,
+  SessionInfo,
+  ShareReport,
+  SnapshotInfo,
+  ThemePreference,
+} from '@wb/shared'
 
 export class ApiError extends Error {
-  constructor(readonly status: number) {
-    super(`HTTP ${status}`)
+  constructor(
+    readonly status: number,
+    readonly code: ApiErrorCode | 'network' | 'unknown',
+    readonly details: { reason?: string; retryAfterSeconds?: number } = {},
+  ) {
+    super(`HTTP ${status} ${code}`)
   }
 }
 
+async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
+  let response: Response
+  try {
+    response = await fetch(path, {
+      method,
+      credentials: 'same-origin',
+      headers: body === undefined || body instanceof FormData ? {} : { 'Content-Type': 'application/json' },
+      body: body === undefined ? undefined : body instanceof FormData ? body : JSON.stringify(body),
+    })
+  } catch {
+    throw new ApiError(0, 'network')
+  }
+  if (response.status === 204) return undefined as T
+  const data = (await response.json().catch(() => ({}))) as { error?: ApiErrorCode } & Record<string, unknown>
+  if (!response.ok) throw new ApiError(response.status, data.error ?? 'unknown', data as ApiError['details'])
+  return data as T
+}
+
+const get = <T>(path: string) => request<T>('GET', path)
+const enc = encodeURIComponent
+
 export const api = {
-  access: () => fetch('/api/debug/access').then((res) => json<{ ok: boolean }>(res)),
-  reports: () => fetch('/api/debug/share').then((res) => json<{ reports: ShareReport[] }>(res)),
-  report: (id: string) => fetch(`/api/debug/share/${encodeURIComponent(id)}`).then((res) => json<ShareReport>(res)),
-  sendShare: (form: FormData) =>
-    fetch('/api/debug/share', { method: 'POST', body: form }).then((res) => json<ShareReport>(res)),
+  status: () => get<AuthStatus>('/api/auth/status'),
+  me: () => get<Me>('/api/auth/me'),
+  setup: (body: { token: string; name: string; email: string; password: string }) =>
+    request<Me>('POST', '/api/auth/setup', body),
+  login: (body: { email: string; password: string }) => request<Me>('POST', '/api/auth/login', body),
+  logout: () => request<void>('POST', '/api/auth/logout'),
+  invite: (token: string) => get<InviteInfo>(`/api/invites/${enc(token)}`),
+  acceptInvite: (token: string, body: { name: string; email: string; password: string }) =>
+    request<Me>('POST', `/api/invites/${enc(token)}`, body),
+  resetPassword: (token: string, password: string) =>
+    request<Me>('POST', `/api/auth/reset/${enc(token)}`, { password }),
+
+  updateMe: (body: { name?: string; theme?: ThemePreference }) => request<Me>('PUT', '/api/me', body),
+  changePassword: (body: { currentPassword: string; newPassword: string }) =>
+    request<void>('PUT', '/api/me/password', body),
+  sessions: () => get<SessionInfo[]>('/api/me/sessions'),
+  revokeSession: (id: string) => request<void>('DELETE', `/api/me/sessions/${enc(id)}`),
+
+  users: () => get<AdminUser[]>('/api/admin/users'),
+  createInvite: (role: Role) => request<OneTimeLink>('POST', '/api/admin/invites', { role }),
+  updateUser: (id: string, body: { disabled?: boolean; role?: Role }) =>
+    request<AdminUser>('PATCH', `/api/admin/users/${enc(id)}`, body),
+  resetLink: (id: string) => request<OneTimeLink>('POST', `/api/admin/users/${enc(id)}/reset-link`),
+  system: () => get<{ version: string; users: number; boards: number; dbBytes: number }>('/api/admin/system'),
+
+  boards: (trash = false) => get<BoardSummary[]>(`/api/boards${trash ? '?trash=1' : ''}`),
+  board: (id: string) => get<BoardDetail>(`/api/boards/${enc(id)}`),
+  createBoard: (body: { name: string; hashtag?: string }) => request<BoardSummary>('POST', '/api/boards', body),
+  updateBoard: (id: string, body: { name?: string; hashtag?: string }) =>
+    request<BoardSummary>('PATCH', `/api/boards/${enc(id)}`, body),
+  deleteBoard: (id: string) => request<void>('DELETE', `/api/boards/${enc(id)}`),
+  restoreBoard: (id: string) => request<BoardSummary>('POST', `/api/boards/${enc(id)}/restore`),
+  snapshots: (id: string) => get<SnapshotInfo[]>(`/api/boards/${enc(id)}/snapshots`),
+  createSnapshot: (id: string) => request<SnapshotInfo>('POST', `/api/boards/${enc(id)}/snapshots`),
+  restoreSnapshot: (id: string, snapshotId: string) =>
+    request<void>('POST', `/api/boards/${enc(id)}/snapshots/${enc(snapshotId)}/restore`),
+  uploadBoardFile: (boardId: string, fileId: string, blob: Blob) => {
+    const form = new FormData()
+    form.set('fileId', fileId)
+    form.set('file', blob, fileId)
+    return request<{ fileId: string }>('POST', `/api/boards/${enc(boardId)}/files`, form)
+  },
+
+  // Spike A share test page (until Phase 3).
+  reports: () => get<{ reports: ShareReport[] }>('/api/debug/share'),
+  report: (id: string) => get<ShareReport>(`/api/debug/share/${enc(id)}`),
+  sendShare: (form: FormData) => request<ShareReport>('POST', '/api/debug/share', form),
 }
 
 export function formatBytes(size: number): string {

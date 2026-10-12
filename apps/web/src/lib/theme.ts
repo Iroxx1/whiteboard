@@ -1,6 +1,7 @@
+import type { ThemePreference } from '@wb/shared'
 import { useCallback, useSyncExternalStore } from 'react'
 
-export type ThemePreference = 'system' | 'light' | 'dark'
+export type { ThemePreference }
 export type ResolvedTheme = 'light' | 'dark'
 
 // Keep in sync with public/theme-init.js.
@@ -61,4 +62,16 @@ export function useTheme() {
     for (const listener of listeners) listener()
   }, [])
   return { preference, theme: resolveTheme(preference, system === 'dark'), setPreference }
+}
+
+/** Applies the theme stored in the user's account (PLAN.md 5.13); the server wins at sign-in. */
+export function applyStoredTheme(preference: ThemePreference) {
+  try {
+    if (localStorage.getItem(STORAGE_KEY) === preference) return
+    localStorage.setItem(STORAGE_KEY, preference)
+  } catch {
+    return
+  }
+  apply()
+  for (const listener of listeners) listener()
 }

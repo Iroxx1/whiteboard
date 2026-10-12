@@ -1,13 +1,14 @@
 import fs from 'node:fs'
 import type { FastifyInstance } from 'fastify'
-import type { Config } from '../config.ts'
+import type { AppContext } from '../context.ts'
 
-export function registerHealthRoutes(app: FastifyInstance, config: Config) {
+export function registerHealthRoutes(app: FastifyInstance, ctx: AppContext) {
   // Public on purpose; reveals no details (PLAN.md 6).
   app.get('/healthz', async (_request, reply) => {
     let healthy = true
     try {
-      fs.accessSync(config.DATA_DIR, fs.constants.W_OK)
+      fs.accessSync(ctx.config.DATA_DIR, fs.constants.W_OK)
+      ctx.database.sqlite.prepare('SELECT 1').get()
     } catch {
       healthy = false
     }

@@ -18,12 +18,13 @@ Aus der Inbox zieht man Inhalte per Drag & Drop aufs Board. Alternativ wählt ma
 
 ## Status
 
-Phase 0 (Grundgerüst und Risiko-Tests) abgeschlossen; als Nächstes Phase 1 (Whiteboard-Kern).
+Phase 1 (Whiteboard-Kern: Konten, Boards, Echtzeit-Zusammenarbeit, Verlauf) abgeschlossen; als Nächstes Phase 2 (Inbox, Verarbeitung und Karten).
 
 - [`docs/PLAN.md`](docs/PLAN.md): vollständiger Umsetzungsplan (Anforderungen, Architektur, Phasen, Abnahmekriterien)
 - [`docs/STATUS.md`](docs/STATUS.md): Fortschritt und Entscheidungen
 - [`docs/SPIKES.md`](docs/SPIKES.md): Ergebnisse der Risiko-Tests
 - [`docs/SETUP.md`](docs/SETUP.md): Einrichtung auf Proxmox
+- [`docs/BETRIEB.md`](docs/BETRIEB.md): Updates, Sicherungen, Wiederherstellung, Fehlersuche
 - [`CLAUDE.md`](CLAUDE.md): Arbeitsregeln für das umsetzende Claude-Modell
 
 ## Umsetzung starten

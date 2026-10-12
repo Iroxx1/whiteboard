@@ -35,7 +35,7 @@ export default defineConfig({
     proxy: {
       '/api': SERVER,
       '/healthz': SERVER,
-      '/zugang': SERVER,
+      '/socket.io': { target: SERVER, ws: true },
       '/manifest.webmanifest': SERVER,
       '/share-target': SERVER,
     },

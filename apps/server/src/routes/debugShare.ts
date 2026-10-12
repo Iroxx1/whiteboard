@@ -1,10 +1,9 @@
 import type { SharedFileInfo, ShareReport } from '@wb/shared'
 import { ulid } from '@wb/shared'
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
-import type { Config } from '../config.ts'
-import type { SpikeAccess } from './spikeAccess.ts'
 
-// Phase 0 only (Spike A): records what the Android share sheet delivers. Files are counted and
+// Spike A test page, kept until Phase 3 replaces it with the real share flow (only for signed-in
+// users since Phase 1). Records what the Android share sheet delivers. Files are counted and
 // discarded, nothing is written to disk, and reports live in memory only (never logged).
 
 const MAX_REPORTS = 50
@@ -12,7 +11,7 @@ const MAX_TEXT = 4000
 
 const clip = (value: string | undefined) => (value ? value.slice(0, MAX_TEXT) : null)
 
-export function registerDebugShareRoutes(app: FastifyInstance, _config: Config, access: SpikeAccess) {
+export function registerDebugShareRoutes(app: FastifyInstance) {
   const reports: ShareReport[] = []
 
   async function readShare(request: FastifyRequest, defaultVia: ShareReport['via']): Promise<ShareReport> {
@@ -47,20 +46,17 @@ export function registerDebugShareRoutes(app: FastifyInstance, _config: Config, 
 
   app.post('/api/debug/share', async (request, reply) => {
     noStore(reply)
-    if (!access.require(request, reply)) return reply
     if (!request.isMultipart()) return reply.code(415).send({ error: 'multipart expected' })
     return readShare(request, 'service-worker')
   })
 
-  app.get('/api/debug/share', async (request, reply) => {
+  app.get('/api/debug/share', async (_request, reply) => {
     noStore(reply)
-    if (!access.require(request, reply)) return reply
     return { reports }
   })
 
   app.get<{ Params: { id: string } }>('/api/debug/share/:id', async (request, reply) => {
     noStore(reply)
-    if (!access.require(request, reply)) return reply
     const report = reports.find((entry) => entry.id === request.params.id)
     return report ?? reply.code(404).send({ error: 'not found' })
   })
@@ -69,7 +65,7 @@ export function registerDebugShareRoutes(app: FastifyInstance, _config: Config, 
   // server directly, e.g. before the service worker is active (PLAN.md 5.6).
   app.post('/share-target', async (request, reply) => {
     noStore(reply)
-    if (!access.has(request)) {
+    if (!request.auth) {
       return reply
         .code(401)
         .type('text/html; charset=utf-8')

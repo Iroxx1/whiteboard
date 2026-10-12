@@ -2,7 +2,7 @@
   "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
   "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
   "files": {
-    "includes": ["**", "!**/dist", "!**/public/fonts", "!pnpm-lock.yaml"]
+    "includes": ["**", "!**/dist", "!**/public/fonts", "!pnpm-lock.yaml", "!**/drizzle/meta"]
   },
   "formatter": {
     "indentStyle": "space",

@@ -35,10 +35,12 @@ Node 24, pnpm über corepack (`corepack enable`; Version steht in `package.json`
 | `pnpm install` | Abhängigkeiten (Builds nur für die Pakete in `pnpm-workspace.yaml` → `allowBuilds`) |
 | `pnpm dev` | Server (`:3000`, tsx watch) und Web (Vite `:5173`, Proxy auf den Server) |
 | `pnpm test` | Vitest für alle Pakete |
+| `pnpm e2e` | Playwright-E2E gegen den Produktions-Build (vorher `pnpm build`; lokal mit installiertem Chrome) |
+| `pnpm --filter @wb/server db:generate` | neue SQL-Migration nach Änderung an `apps/server/src/db/schema.ts` |
 | `pnpm lint` / `pnpm format` | Biome prüfen / korrigieren |
 | `pnpm typecheck` | `tsc` je Paket (Web zusätzlich Service Worker mit `tsconfig.sw.json`) |
 | `pnpm build` | Web (Vite + Service Worker) und Server (esbuild-Bundle nach `apps/server/dist`) |
-| `pnpm start` | gebauten Server starten (braucht ENV, siehe `infra/compose/.env.example`) |
+| `pnpm start` | gebauten Server starten (braucht ENV, siehe `infra/compose/.env.example`; Einrichtungslink steht im Log) |
 | `docker build -f infra/docker/Dockerfile .` | Image lokal bauen (sonst baut es `release.yml` bei Push auf `main`) |
 
 Aufbau: `apps/server` (Fastify), `apps/web` (React/Vite/PWA), `packages/shared` (Typen, IDs), `infra/` (Docker, Compose). Betrieb: CT 118 auf Proxmox, siehe `docs/SETUP.md` (Abweichungen vom Plan in `docs/STATUS.md`).

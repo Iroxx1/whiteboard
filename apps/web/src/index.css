@@ -13,6 +13,9 @@
   --wb-muted: #5f6370;
   --wb-border: #e3e5ea;
   --wb-accent: #4c6ef5;
+  --wb-hover: #eef0f4;
+  --wb-danger: #e03131;
+  --wb-success: #2b8a3e;
   color-scheme: light;
 }
 
@@ -23,6 +26,9 @@
   --wb-muted: #a3a6b4;
   --wb-border: #33343d;
   --wb-accent: #7f9cff;
+  --wb-hover: #2a2b33;
+  --wb-danger: #ff6b6b;
+  --wb-success: #69db7c;
   color-scheme: dark;
 }
 

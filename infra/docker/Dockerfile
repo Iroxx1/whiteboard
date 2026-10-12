@@ -14,6 +14,13 @@ COPY packages/shared/package.json packages/shared/
 RUN pnpm install --frozen-lockfile
 COPY . .
 RUN pnpm build
+# Production dependencies of the server (the bundle keeps the native modules better-sqlite3 and
+# @node-rs/argon2 external). Prebuilt binaries for other platforms and the SQLite sources are
+# not needed at runtime.
+RUN pnpm --filter @wb/server deploy --prod /out \
+  && cd /out/node_modules/.pnpm \
+  && find . -path '*/better-sqlite3/prebuilds/*' ! -name 'linux-x64.node' -delete \
+  && rm -rf ./better-sqlite3@*/node_modules/better-sqlite3/deps ./better-sqlite3@*/node_modules/better-sqlite3/src
 
 FROM node:${NODE_VERSION}-trixie-slim AS runtime
 # Media tools (ffmpeg, poppler, tesseract) are added with the phases that need them (2, 8).
@@ -29,8 +36,9 @@ ENV NODE_ENV=production \
     APP_VERSION=${APP_VERSION}
 
 WORKDIR /app
-# The server is bundled into a single file, so no node_modules are needed at runtime.
+COPY --from=build /out/node_modules apps/server/node_modules
 COPY --from=build /src/apps/server/dist apps/server/dist
+COPY --from=build /src/apps/server/drizzle apps/server/drizzle
 COPY --from=build /src/apps/web/dist apps/web/dist
 RUN mkdir -p /data && chown node:node /data
 

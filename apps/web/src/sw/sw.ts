@@ -43,7 +43,7 @@ async function handleShareTarget(request: Request): Promise<Response> {
   return Response.redirect(new URL(`/share?id=${id}`, self.location.origin).href, 303)
 }
 
-// Phase 0: activate new versions right away. The "new version available" prompt follows in Phase 3.
+// Activate new versions right away. The "new version available" prompt follows in Phase 3.
 self.skipWaiting()
 clientsClaim()
 
@@ -52,7 +52,7 @@ cleanupOutdatedCaches()
 
 registerRoute(
   new NavigationRoute(createHandlerBoundToURL('/index.html'), {
-    denylist: [/^\/api\//, /^\/zugang/, /^\/healthz/, /^\/manifest\.webmanifest/, /^\/share-target/],
+    denylist: [/^\/api\//, /^\/socket\.io/, /^\/healthz/, /^\/manifest\.webmanifest/, /^\/share-target/],
   }),
 )
 

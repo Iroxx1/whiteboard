@@ -1,6 +1,6 @@
 # Einrichtung
 
-Schritt-für-Schritt-Anleitung für den Betrieb auf Proxmox. Stand: Phase 0.
+Schritt-für-Schritt-Anleitung für den Betrieb auf Proxmox. Stand: Phase 1.
 
 > **Abweichung vom Plan (mit dem Auftraggeber entschieden, 12.10.2026):** Das Whiteboard läuft in einem **LXC-Container mit Docker** statt in einer eigenen VM, und es nutzt den **bestehenden Cloudflare-Tunnel** (Connector läuft in Home Assistant) statt eines eigenen `cloudflared`-Containers. Die Anleitung beschreibt diesen Weg. Der Plan-Weg (VM + eigener Tunnel) bleibt über das Compose-Profil `tunnel` möglich.
 
@@ -60,7 +60,6 @@ In `.env` mindestens setzen:
 | `WB_BIND` | `0.0.0.0` (der Cloudflare-Connector läuft auf einem anderen Rechner im LAN) |
 | `PUBLIC_URL` | `https://board.dittgen.uk` |
 | `TRUSTED_PROXIES` | IP des Rechners mit dem Cloudflare-Connector (Home Assistant: `192.168.1.193`) |
-| `SPIKE_ACCESS_KEY` | nur Phase 0: `openssl rand -base64 32` |
 
 Starten und prüfen:
 
@@ -85,16 +84,36 @@ Für den Hostnamen außerdem:
 
 WebSockets sind standardmäßig aktiv.
 
-## 5. Phase 0: Gerät freischalten und testen
+## 5. Erste Anmeldung (Admin-Konto)
 
-1. Auf jedem Testgerät einmal `https://board.dittgen.uk/zugang?key=<SPIKE_ACCESS_KEY>` öffnen. Danach steht auf der Startseite „Gerät freigeschaltet“.
-2. **Handy (Chrome):** Menü ⋮ → „App installieren“. Es muss eine echte Installation sein, keine Verknüpfung.
-3. Aus anderen Apps an „Whiteboard“ teilen; die Testfälle stehen in `docs/SPIKES.md`.
+Solange es noch kein Konto gibt, schreibt die App beim Start einen **einmaligen Einrichtungslink** ins Log. Der Link ist geheim: Wer ihn hat, kann das Admin-Konto anlegen. Er gilt, bis das Konto angelegt ist; nach einem Neustart der App steht ein neuer Link im Log (der alte ist dann ungültig).
+
+1. Link aus dem Log holen (im Container, `pct enter 118`):
+
+   ```bash
+   cd /opt/whiteboard
+   docker compose logs app | grep -o 'https://[^"]*/setup?token=[^"]*'
+   ```
+
+2. Den Link im Browser öffnen, Name, E-Mail-Adresse und Passwort (mindestens 10 Zeichen) eintragen → **Admin-Konto anlegen**.
+3. Danach erscheint die Board-Übersicht. Der Einrichtungslink funktioniert ab jetzt nicht mehr.
+
+## 6. Weitere Personen einladen
+
+1. Oben auf **Verwaltung** → **+ Einladen** (Haken „als Admin“, wenn die Person auch Nutzer verwalten soll).
+2. Den angezeigten Link kopieren und z. B. per WhatsApp schicken. Er funktioniert **einmal** und ist **7 Tage** gültig; er wird nur in diesem Moment angezeigt.
+3. Die Person öffnet den Link, wählt Name, E-Mail und Passwort und ist danach angemeldet.
+
+Passwort vergessen: In der Verwaltung beim Nutzer auf **Passwort-Link** (einmalig, 24 Stunden gültig). Hat der einzige Admin sein Passwort vergessen: siehe `docs/BETRIEB.md` → „Passwort-Link über die Kommandozeile“.
+
+## 7. Handy
+
+1. Chrome auf Android → `https://board.dittgen.uk` → anmelden.
+2. Menü ⋮ → **„App installieren“**. Es muss eine echte Installation sein, keine Verknüpfung; nur dann erscheint „Whiteboard“ im Teilen-Menü.
+3. Die Anmeldung gilt 180 Tage und verlängert sich bei Benutzung von selbst.
+
+Die Teilen-Testseite aus Phase 0 bleibt bis Phase 3 erhalten (`/share`), jetzt mit normaler Anmeldung statt Zugangslink.
 
 ## Updates
 
-```bash
-cd /opt/whiteboard
-# WB_IMAGE_TAG in .env auf das neue sha-Tag setzen, dann:
-docker compose pull && docker compose up -d && docker image prune -f
-```
+Siehe `docs/BETRIEB.md`.

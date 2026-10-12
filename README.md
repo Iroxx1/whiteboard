@@ -18,7 +18,7 @@ Aus der Inbox zieht man Inhalte per Drag & Drop aufs Board. Alternativ wählt ma
 
 ## Status
 
-Phase 0 (Grundgerüst und Risiko-Tests) in Arbeit.
+Phase 0 (Grundgerüst und Risiko-Tests) abgeschlossen; als Nächstes Phase 1 (Whiteboard-Kern).
 
 - [`docs/PLAN.md`](docs/PLAN.md): vollständiger Umsetzungsplan (Anforderungen, Architektur, Phasen, Abnahmekriterien)
 - [`docs/STATUS.md`](docs/STATUS.md): Fortschritt und Entscheidungen

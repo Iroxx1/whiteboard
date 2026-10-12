@@ -6,7 +6,7 @@ Wird vom umsetzenden Modell nach jeder Phase aktualisiert. Phasen und Abnahmekri
 
 | Phase | Inhalt | Status |
 |---|---|---|
-| 0 | Fundament und Risiko-Tests (Spike A: Teilen-Menü am Handy, Spike B: Excalidraw) | fertig bis auf die offenen Fragen unten (Spike A am Handy bestanden, Spike B bestätigt, CI grün, Image in GHCR) |
+| 0 | Fundament und Risiko-Tests (Spike A: Teilen-Menü am Handy, Spike B: Excalidraw) | ✅ fertig (12.10.2026) |
 | 1 | Whiteboard-Kern (Konten, Boards, Echtzeit-Sync, Dark Mode) | offen |
 | 2 | Inbox, Verarbeitung und Karten | offen |
 | 3 | PWA und Teilen-Menü | offen |
@@ -20,11 +20,7 @@ Wird vom umsetzenden Modell nach jeder Phase aktualisiert. Phasen und Abnahmekri
 
 ## Offene Fragen an den Auftraggeber
 
-Aus Spike B (Details in `docs/SPIKES.md`), vor Phase 1 zu klären:
-
-- **Haftnotizen im Dark Mode:** Excalidraw invertiert die Zeichenfläche; Pastellgelb wird dunkles Oliv. So lassen oder anders lösen?
-- **Karten immer oben:** Karten (Links, PDFs, Audio, Video) liegen immer über gezeichneten Elementen. Akzeptabel?
-- **Link-Symbol an jeder Karte:** Excalidraw zeichnet ein kleines Link-Symbol an jede Karte. So lassen oder per Patch der Bibliothek entfernen?
+_(keine)_
 
 ## Entscheidungen während der Umsetzung
 
@@ -40,6 +36,9 @@ Aus Spike B (Details in `docs/SPIKES.md`), vor Phase 1 zu klären:
 | 12.10.2026 | Server wird mit esbuild zu einer Datei gebündelt; Laufzeit-Image ohne `node_modules` | kleines Image; ändert sich, sobald native Module dazukommen (better-sqlite3, sharp – Phase 1/2) |
 | 12.10.2026 | Service Worker cacht vorab nur App-Shell und Schriften (~0,5 MB); Excalidraw-Teile beim ersten Gebrauch | vollständiger Precache wären ~8 MB auf jedem Handy |
 | 12.10.2026 | Medienwerkzeuge (ffmpeg, poppler, tesseract) erst mit Phase 2/8 ins Image | in Phase 0 nicht gebraucht |
+| 12.10.2026 | Haftnotizen im Dunkelmodus: Excalidraw-Standard (Zeichenfläche wird invertiert, Pastell wird gedimmt) | Auftraggeber: so lassen; kein Patch nötig |
+| 12.10.2026 | Karten liegen immer über gezeichneten Elementen | Auftraggeber: akzeptabel (Excalidraw legt Embeddables als HTML-Ebene darüber) |
+| 12.10.2026 | Link-Symbol an Karten per `pnpm patch` von Excalidraw entfernen, nur für Elemente mit `customData.wb` | Auftraggeber: entfernen. Umsetzung mit den Karten in Phase 2; Patch bei jedem Excalidraw-Update prüfen |
 
 ## Manuelle Tests durch den Auftraggeber
 
@@ -51,4 +50,4 @@ Aus Spike B (Details in `docs/SPIKES.md`), vor Phase 1 zu klären:
 - [ ] GitHub: Standard-Branch des Repos auf `main` umstellen (Settings → General → Default branch)
 - [x] Handy: Zugangslink, App installiert, Link aus Chrome geteilt (weitere Fälle folgen in Phase 3)
 - [ ] Optional: `/spike/excalidraw` auf Tablet/Handy öffnen, „300 Karten“ antippen und verschieben – flüssig?
-- [ ] Die drei offenen Fragen oben beantworten
+- [x] Die drei offenen Fragen aus Spike B beantwortet

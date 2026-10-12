@@ -1,4 +1,5 @@
 export * from './api.ts'
+export * from './embeds.ts'
 export * from './hashtags.ts'
 export * from './ids.ts'
 export * from './items.ts'

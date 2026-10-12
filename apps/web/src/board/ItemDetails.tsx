@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import type { ItemDetail } from '@wb/shared'
+import { type ItemDetail, instagramEmbed } from '@wb/shared'
 import { useEffect, useId, useState } from 'react'
 import { Link } from 'react-router'
 import { de } from '../i18n/de.ts'
@@ -11,11 +11,15 @@ import { itemDetailKey, itemKey } from './itemsData.ts'
 
 function Preview({ item }: { item: ItemDetail }) {
   const original = item.assets.original
-  if (item.meta.embed) {
+  // Instagram links saved before the embed existed get it here too.
+  const embed = item.meta.embed ?? (item.url ? instagramEmbed(item.url) : null)
+  if (embed) {
+    // Instagram's embed is portrait with caption below; the others are 16:9 players.
+    const frame = embed.provider === 'instagram' ? 'h-[620px] bg-white' : 'aspect-video bg-black'
     return (
-      <div className="aspect-video w-full overflow-hidden rounded-lg bg-black">
+      <div className={`w-full overflow-hidden rounded-lg ${frame}`}>
         <iframe
-          src={item.meta.embed.embedUrl}
+          src={embed.embedUrl}
           title={itemTitle(item)}
           className="h-full w-full"
           allow="encrypted-media; picture-in-picture; fullscreen"

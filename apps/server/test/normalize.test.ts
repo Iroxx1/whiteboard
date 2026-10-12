@@ -157,3 +157,26 @@ describe('mime helpers', () => {
     expect(sanitizeFilename('\u0000\u202e.')).toBe('datei')
   })
 })
+
+describe('instagram embed', () => {
+  it('recognises posts and reels', async () => {
+    const post = await normalizePayload(payload({ url: 'https://www.instagram.com/p/DeBYpZQAP2I/' }), boards)
+    expect(post.drafts[0]?.meta.embed).toEqual({
+      provider: 'instagram',
+      embedUrl: 'https://www.instagram.com/p/DeBYpZQAP2I/embed',
+    })
+    expect(post.drafts[0]?.meta.isVideo).toBeUndefined()
+    const reel = await normalizePayload(
+      payload({ text: 'https://www.instagram.com/reels/C1aB2cD3eF4/?igsh=x' }),
+      boards,
+    )
+    expect(reel.drafts[0]?.meta).toMatchObject({
+      isVideo: true,
+      embed: { embedUrl: 'https://www.instagram.com/reel/C1aB2cD3eF4/embed' },
+    })
+    expect(
+      (await normalizePayload(payload({ url: 'https://www.instagram.com/accounts/login/' }), boards)).drafts[0]?.meta
+        .embed,
+    ).toBeUndefined()
+  })
+})

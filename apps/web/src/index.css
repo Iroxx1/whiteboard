@@ -44,3 +44,8 @@ body {
   color: var(--wb-text);
   font-family: var(--font-sans);
 }
+
+/* Excalidraw's library ("Bibliothek") is not used: hide its button (decided 12.10.2026). */
+.excalidraw .default-sidebar-trigger.default-sidebar-trigger {
+  display: none;
+}

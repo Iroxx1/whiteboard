@@ -9,7 +9,7 @@ export type AssetRole = 'original' | 'display' | 'thumb' | 'og_image' | 'favicon
 
 export type AssetInfo = { id: string; mime: string; size: number; width: number | null; height: number | null }
 
-export type Embed = { provider: 'youtube' | 'vimeo' | 'spotify'; embedUrl: string }
+export type Embed = { provider: 'youtube' | 'vimeo' | 'spotify' | 'instagram'; embedUrl: string }
 
 /** Kind-specific metadata filled by ingest and the processors. */
 export type ItemMeta = {

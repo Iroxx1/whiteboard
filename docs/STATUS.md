@@ -86,6 +86,10 @@ _(keine)_
 | 12.10.2026 | Phase 2: Detailansicht im Board als eigene Seitenleiste rechts (nicht als Excalidraw-Sidebar) | Excalidraw zeigt nur eine Sidebar gleichzeitig; so bleibt die Inbox offen |
 | 12.10.2026 | Phase 2: sharp, heic-convert und file-type bleiben (wie better-sqlite3 und argon2) außerhalb des Server-Bundles und kommen per `pnpm deploy` ins Image; ffmpeg und poppler-utils sind im Image | native Module bzw. Laden zur Laufzeit |
 | 12.10.2026 | Phase 2: HEIC-Umwandlung ist nicht automatisch getestet (kein HEIC-Encoder für Testdateien); Prüfung mit einem echten Handyfoto in Phase 3 | – |
+| 12.10.2026 | Instagram-Beiträge und -Reels spielen in der Detailansicht über Instagrams offizielles Embed (`instagram.com/<p|reel>/<id>/embed`); beim Öffnen der Details lädt der Browser Inhalte und Tracking von Meta. **Abweichung von PLAN.md 8.4:** `www.instagram.com` kommt in Phase 6 mit auf die `frame-src`-Liste | Auftraggeber |
+| 12.10.2026 | Nach einem Update lädt ein vorher geöffneter Tab einmal automatisch neu, wenn ein nachgeladener Programmteil fehlt (Vite `preloadError`, höchstens einmal pro Minute); der Hinweis „Neue Version verfügbar“ folgt in Phase 3 | Fehler „Bild einfügen geht nicht“ nach dem Phase-2-Update (404 auf alten Excalidraw-Baustein) |
+| 12.10.2026 | Excalidraw-Bibliothek (Knopf „Bibliothek“) ausgeblendet; Vorlagen von libraries.excalidraw.com werden nicht übernommen | Auftraggeber; nicht im Plan |
+| 12.10.2026 | Teilen aus der Instagram-App: Instagrams eigenes Teilen-Menü zeigt nur wenige Apps; „Whiteboard“ erscheint nur im Android-Teilen-Menü (in Instagram über „Teilen über …“/„Mehr“). Bis Phase 3 landet Geteiltes noch auf der Testseite, nicht in der Inbox | Hinweis an den Auftraggeber |
 
 ## Manuelle Tests durch den Auftraggeber
 

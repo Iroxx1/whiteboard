@@ -1,4 +1,4 @@
-import type { ItemKind, ItemMeta, ItemSource } from '@wb/shared'
+import { type ItemKind, type ItemMeta, type ItemSource, instagramEmbed } from '@wb/shared'
 import { resolveHashtags } from '../lib/hashtags.ts'
 import { extensionOf, kindForMime, sanitizeFilename, sniffFile } from '../lib/mime.ts'
 import { domainOf, findUrls, normalizeUrl, parseHttpUrl, stripUrls, vimeoId, youtubeId } from '../lib/urls.ts'
@@ -60,6 +60,11 @@ export function linkMeta(url: string): ItemMeta {
   )
   if (spotify)
     meta.embed = { provider: 'spotify', embedUrl: `https://open.spotify.com/embed/${spotify[1]}/${spotify[2]}` }
+  const instagram = instagramEmbed(url)
+  if (instagram) {
+    meta.embed = { provider: instagram.provider, embedUrl: instagram.embedUrl }
+    if (instagram.isVideo) meta.isVideo = true
+  }
   return meta
 }
 

@@ -7,7 +7,7 @@ Wird vom umsetzenden Modell nach jeder Phase aktualisiert. Phasen und Abnahmekri
 | Phase | Inhalt | Status |
 |---|---|---|
 | 0 | Fundament und Risiko-Tests (Spike A: Teilen-Menü am Handy, Spike B: Excalidraw) | ✅ fertig (12.10.2026) |
-| 1 | Whiteboard-Kern (Konten, Boards, Echtzeit-Sync, Dark Mode) | ✅ fertig (12.10.2026), Ausrollen auf CT 118 nach Rückfrage |
+| 1 | Whiteboard-Kern (Konten, Boards, Echtzeit-Sync, Dark Mode) | ✅ fertig (12.10.2026), auf CT 118 ausgerollt (`sha-82a447a`) |
 | 2 | Inbox, Verarbeitung und Karten | offen |
 | 3 | PWA und Teilen-Menü | offen |
 | 4 | Telegram-Bot | offen |
@@ -76,7 +76,7 @@ _(keine)_
 
 ### Phase 1
 
-- [ ] Neues Image auf CT 118 (macht Claude nach Rückfrage: `.env` sichern, `SPIKE_ACCESS_KEY` entfernen, Tag setzen, Änderungsprotokoll)
+- [x] Neues Image auf CT 118 (`sha-82a447a`, `.env` gesichert, `SPIKE_ACCESS_KEY` entfernt, Änderungsprotokoll)
 - [ ] Admin-Konto über den Einrichtungslink anlegen (`docs/SETUP.md` Schritt 5)
 - [ ] Zweite Person (oder zweiter Browser im Inkognito-Fenster) einladen und gemeinsam ein Board bearbeiten: erscheinen Änderungen und Mauszeiger sofort?
 - [ ] Bild per Drag & Drop oder Einfügen aufs Board – sieht die andere Person es auch?

@@ -1,10 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import type { TelegramLinkCode } from '@wb/shared'
 import { PASSWORD_MIN_LENGTH } from '@wb/shared'
-import { type FormEvent, useState } from 'react'
+import QRCode from 'qrcode'
+import { type FormEvent, useEffect, useState } from 'react'
 import { de } from '../i18n/de.ts'
 import { api } from '../lib/api.ts'
 import { ME_KEY, useMe } from '../lib/auth.tsx'
 import { formatRelative } from '../lib/format.ts'
+import { useMediaQuery } from '../lib/useMediaQuery.ts'
 import { Button, Card, FormMessage, TextField } from '../ui/kit.tsx'
 import { Layout } from '../ui/Layout.tsx'
 import { ThemeToggle } from '../ui/ThemeToggle.tsx'
@@ -179,6 +182,113 @@ function Sessions() {
   )
 }
 
+/** QR code of the deep link for linking from the PC with the phone (PLAN.md 5.7). */
+function QrImage({ url }: { url: string }) {
+  const [src, setSrc] = useState<string | null>(null)
+  useEffect(() => {
+    let active = true
+    QRCode.toDataURL(url, { margin: 1, width: 200 }).then(
+      (data) => active && setSrc(data),
+      () => active && setSrc(null),
+    )
+    return () => {
+      active = false
+    }
+  }, [url])
+  return src ? <img src={src} alt="" width={200} height={200} className="rounded bg-white p-1" /> : null
+}
+
+/** Settings → "Telegram verbinden" (PLAN.md 5.7): one-time deep link, then wait until linked. */
+function Telegram() {
+  const queryClient = useQueryClient()
+  const desktop = useMediaQuery('(min-width: 768px) and (pointer: fine)')
+  const [link, setLink] = useState<TelegramLinkCode | null>(null)
+  const [now, setNow] = useState(Date.now())
+  const status = useQuery({
+    queryKey: ['telegram'],
+    queryFn: api.telegram,
+    // While a link is shown: notice when the bot linked the account.
+    refetchInterval: link ? 3000 : false,
+  })
+  const linked = status.data?.linked ?? null
+  useEffect(() => {
+    if (linked) setLink(null)
+  }, [linked])
+  useEffect(() => {
+    if (!link) return
+    const timer = setInterval(() => setNow(Date.now()), 5000)
+    return () => clearInterval(timer)
+  }, [link])
+  const create = useMutation({
+    mutationFn: api.telegramLinkCode,
+    onSuccess: (code) => {
+      setNow(Date.now())
+      setLink(code)
+    },
+  })
+  const unlink = useMutation({
+    mutationFn: api.telegramUnlink,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['telegram'] }),
+  })
+  const expired = link !== null && now > link.expiresAt
+
+  return (
+    <Card title={de.settings.telegram}>
+      {status.data && !status.data.enabled && (
+        <p className="text-sm text-[var(--wb-muted)]">{de.settings.telegramOff}</p>
+      )}
+      {status.data?.enabled && linked && (
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-sm">
+            {de.settings.telegramLinked(
+              status.data.botUsername ?? '',
+              linked.username,
+              formatRelative(linked.linkedAt),
+            )}
+          </p>
+          <Button onClick={() => unlink.mutate()} disabled={unlink.isPending}>
+            {de.settings.telegramDisconnect}
+          </Button>
+        </div>
+      )}
+      {status.data?.enabled && !linked && (
+        <div className="flex flex-col gap-3">
+          <p className="text-sm">{de.settings.telegramIntro}</p>
+          {link && !expired ? (
+            <>
+              <p className="text-sm text-[var(--wb-muted)]">{de.settings.telegramSteps}</p>
+              <a
+                href={link.url}
+                target="_blank"
+                rel="noreferrer"
+                className="self-start rounded-lg bg-[var(--wb-accent)] px-3 py-1.5 text-sm text-white"
+              >
+                {de.settings.telegramOpen}
+              </a>
+              {desktop && (
+                <div className="flex flex-col gap-1">
+                  <span className="text-sm text-[var(--wb-muted)]">{de.settings.telegramQr}</span>
+                  <QrImage url={link.url} />
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {expired && <p className="text-sm text-[var(--wb-muted)]">{de.settings.telegramExpired}</p>}
+              <div>
+                <Button variant="primary" onClick={() => create.mutate()} disabled={create.isPending}>
+                  {de.settings.telegramConnect}
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+      <FormMessage error={status.error ?? create.error ?? unlink.error} />
+    </Card>
+  )
+}
+
 export function SettingsPage() {
   return (
     <Layout>
@@ -186,6 +296,9 @@ export function SettingsPage() {
       <div className="grid gap-4 md:grid-cols-2">
         <Profile />
         <PasswordChange />
+        <div className="md:col-span-2">
+          <Telegram />
+        </div>
         <div className="md:col-span-2">
           <Sessions />
         </div>

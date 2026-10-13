@@ -7,6 +7,7 @@ import type { DbHandle } from './db/index.ts'
 import type { ItemService } from './items/service.ts'
 import type { JobQueue } from './jobs/queue.ts'
 import type { RealtimeHub } from './realtime/hub.ts'
+import type { TelegramService } from './telegram/bot.ts'
 
 /** Shared services, created once in buildApp and handed to the route modules. */
 export type AppContext = {
@@ -19,4 +20,5 @@ export type AppContext = {
   hub: RealtimeHub
   items: ItemService
   queue: JobQueue
+  telegram: TelegramService
 }

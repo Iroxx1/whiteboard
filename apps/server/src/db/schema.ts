@@ -225,3 +225,38 @@ export const shareRequests = sqliteTable('share_requests', {
   fileCount: integer('file_count').notNull().default(0),
   createdAt: integer('created_at').notNull(),
 })
+
+// --- Phase 4: Telegram bot (PLAN.md 5.2, 5.7) ---
+
+export const telegramLinks = sqliteTable('telegram_links', {
+  userId: text('user_id')
+    .primaryKey()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  telegramUserId: integer('telegram_user_id').notNull().unique(),
+  username: text('username'),
+  linkedAt: integer('linked_at').notNull(),
+})
+
+export const telegramLinkCodes = sqliteTable('telegram_link_codes', {
+  // SHA-256 of the one-time code from the deep link.
+  codeHash: text('code_hash').primaryKey(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  expiresAt: integer('expires_at').notNull(),
+})
+
+export const telegramMessages = sqliteTable(
+  'telegram_messages',
+  {
+    chatId: integer('chat_id').notNull(),
+    messageId: integer('message_id').notNull(),
+    // 'reply' = the bot's answer with buttons, 'note_prompt' = "send me the note" (force_reply).
+    kind: text('kind', { enum: ['reply', 'note_prompt'] })
+      .notNull()
+      .default('reply'),
+    itemIds: text('item_ids').notNull(),
+    createdAt: integer('created_at').notNull(),
+  },
+  (table) => [uniqueIndex('telegram_messages_unique').on(table.chatId, table.messageId)],
+)

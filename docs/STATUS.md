@@ -10,7 +10,7 @@ Wird vom umsetzenden Modell nach jeder Phase aktualisiert. Phasen und Abnahmekri
 | 1 | Whiteboard-Kern (Konten, Boards, Echtzeit-Sync, Dark Mode) | ✅ fertig (12.10.2026), auf CT 118 ausgerollt (`sha-82a447a`) |
 | 2 | Inbox, Verarbeitung und Karten | ✅ fertig (12.10.2026), auf CT 118 ausgerollt (`sha-6745b66`; Nachbesserung `sha-0cf5ebf`: Instagram-Embed, Neuladen nach Updates, Bibliothek ausgeblendet) |
 | 3 | PWA und Teilen-Menü | ✅ fertig (12.10.2026), auf CT 118 ausgerollt (`sha-9464792`) |
-| 4 | Telegram-Bot | offen |
+| 4 | Telegram-Bot | ✅ fertig (13.10.2026), Ausrollen offen |
 | 5 | E-Mail über Cloudflare | offen |
 | 6 | Produktivbetrieb und Härtung | offen |
 | 7 | Volltextsuche | offen |
@@ -21,6 +21,16 @@ Wird vom umsetzenden Modell nach jeder Phase aktualisiert. Phasen und Abnahmekri
 ## Offene Fragen an den Auftraggeber
 
 _(keine)_
+
+## Stand Phase 4 (13.10.2026)
+
+- **Bot:** grammY mit Long Polling im App-Prozess; aus, solange `TELEGRAM_BOT_TOKEN` leer ist. Die App startet auch ohne Verbindung zu Telegram; der Bot verbindet sich im Hintergrund und versucht es jede Minute neu (bei abgelehntem Token nicht).
+- **Verknüpfen:** Einstellungen → Karte „Telegram“ → „Telegram verbinden“ → „In Telegram öffnen“ (am PC zusätzlich QR-Code); Einmal-Code 10 min, `/start <code>` verknüpft. Die Seite merkt die Verknüpfung von selbst. „Trennen“ in den Einstellungen oder `/trennen` im Bot. Jedes Konto kann sein eigenes Telegram verknüpfen.
+- **Nachrichten:** Text und Links (auch hinter Wörtern versteckte Links), Fotos (größte Auflösung), Alben (1,5 s gesammelt, eine Gruppe), Dokumente, Sprachnachrichten, Audio, Videos, Videonachrichten, GIFs, Standorte und Orte (OpenStreetMap-Link, Ortsname als Titel), Kontakte (Notiz), Weitergeleitetes („Weitergeleitet von …“). Bildunterschrift = Notiz, `#hashtag` legt aufs Board; unbekannte Hashtags → Hinweis mit Board-Liste.
+- **Antwort:** „✅ In der Inbox“ bzw. „✅ Auf Board ‚X‘“ mit den Knöpfen 📋 Auf Board legen (8 zuletzt geänderte Boards + „Mehr …“), ✏️ Notiz (Antwort auf die Rückfrage ersetzt die Notiz), 🗑️ Löschen (Papierkorb).
+- **Befehle:** `/hilfe`, `/boards`, `/inbox`, `/trennen`; werden beim Start im Telegram-Menü eingetragen.
+- **Grenzen:** Dateien über 20 MB lehnt der Bot mit Hinweis auf das Teilen-Menü ab. Gruppen und fremde Absender werden ignoriert (einmal „Dieser Bot ist privat.“).
+- **Tests:** Bot-Handler mit gemockter Bot-API (Verknüpfen, alle Nachrichtenarten, Alben, Größenlimit, Knöpfe, Befehle, fremde Absender).
 
 ## Stand Phase 3 (12.10.2026)
 
@@ -109,6 +119,12 @@ _(keine)_
 | 12.10.2026 | Phase 3: Beim Teilen von Link und Datei zusammen bekommt der Link den geteilten Titel, die erste Datei den Begleittext als Notiz; ohne Link geht der Titel an eine einzelne Datei | Android schickt Seitentitel + URL |
 | 12.10.2026 | Phase 3: Upload-Schritte eines Teilens laufen auf dem Server nacheinander | Seite und Hintergrund-Sync laden manchmal gleichzeitig hoch; sonst entstünden doppelte Einträge |
 | 12.10.2026 | Phase 3: Einmalige Übergangsregel im Service Worker: Ist noch eine Version ohne Update-Hinweis aktiv (bis Phase 2), übernimmt die neue sofort | sonst bliebe die alte Version, bis alle Tabs bzw. die App geschlossen sind |
+| 13.10.2026 | Phase 4: Der Bot ist für jedes Konto da; jede Person verknüpft ihr eigenes Telegram | Auftraggeber |
+| 13.10.2026 | Phase 4: Den Bot legt Maik bei @BotFather an; das Token kommt beim Ausrollen ohne Anzeige in die `.env` | Auftraggeber |
+| 13.10.2026 | Phase 4: „Dieser Bot ist privat.“ geht pro App-Start einmal an einen fremden Absender (im Speicher, keine eigene Tabelle) | PLAN.md regelt nicht, wie dauerhaft „einmalig“ ist |
+| 13.10.2026 | Phase 4: Tabelle `telegram_messages` mit zusätzlicher Spalte `kind` (`reply`/`note_prompt`); Einträge älter als 90 Tage werden gelöscht | „✏️ Notiz“ braucht die Zuordnung der Rückfrage zu den Einträgen |
+| 13.10.2026 | Phase 4: „📋 Auf Board legen“ zeigt die 8 zuletzt geänderten Boards (für alle gleich), „Mehr …“ alle nach Namen | Boards haben keine Nutzungsstatistik pro Person |
+| 13.10.2026 | Phase 4: Der Bot nutzt Nodes eingebautes `fetch`; im Server-Bundle ersetzt ein Platzhalter grammYs `node-fetch` | vermeidet veraltete Abhängigkeiten und Warnungen im Log |
 
 ## Manuelle Tests durch den Auftraggeber
 
@@ -154,3 +170,14 @@ _(keine)_
 - [ ] Abmelden, etwas teilen: führt „Anmelden“ zum Login und danach weiter zum gespeicherten Inhalt?
 - [ ] Handy-Startseite: Tabs „Inbox“/„Boards“, merkt sie sich den zuletzt benutzten Tab?
 - [ ] Ein iPhone-HEIC-Foto (falls zur Hand) über „+ Hinzufügen“: wird es angezeigt?
+
+### Phase 4
+
+- [ ] Bot bei @BotFather anlegen (Anleitung `docs/SETUP.md` Schritt 8), Token in die `.env`
+- [ ] Neues Image auf CT 118 (`.env` gesichert, Änderungsprotokoll)
+- [ ] Einstellungen → „Telegram verbinden“ → „In Telegram öffnen“ → Starten: meldet der Bot „✅ Verknüpft …“ und zeigt die Einstellungsseite „Verknüpft“?
+- [ ] An den Bot schicken: Link, Text, Foto, Album (mehrere Fotos), PDF, Sprachnachricht, Video, Standort – kommt alles richtig in der Inbox an („via Telegram · Maik“)?
+- [ ] Text mit `#boardname`: „✅ Auf Board ‚…‘“ und Karte im Rahmen „📥 Inbox“ des Boards?
+- [ ] Knöpfe: „📋 Auf Board legen“ → Board wählen; „✏️ Notiz“ → Notiz als Antwort schicken; „🗑️ Löschen“
+- [ ] `/boards`, `/inbox`, `/hilfe`
+- [ ] Von einem anderen Telegram-Konto (falls zur Hand) etwas schicken: nur „Dieser Bot ist privat.“, nichts in der Inbox?

@@ -15,6 +15,8 @@ import type {
   Role,
   SessionInfo,
   SnapshotInfo,
+  TelegramLinkCode,
+  TelegramStatus,
   ThemePreference,
 } from '@wb/shared'
 
@@ -67,6 +69,9 @@ export const api = {
     request<void>('PUT', '/api/me/password', body),
   sessions: () => get<SessionInfo[]>('/api/me/sessions'),
   revokeSession: (id: string) => request<void>('DELETE', `/api/me/sessions/${enc(id)}`),
+  telegram: () => get<TelegramStatus>('/api/me/telegram'),
+  telegramLinkCode: () => request<TelegramLinkCode>('POST', '/api/me/telegram/link-code'),
+  telegramUnlink: () => request<void>('DELETE', '/api/me/telegram'),
 
   users: () => get<AdminUser[]>('/api/admin/users'),
   createInvite: (role: Role) => request<OneTimeLink>('POST', '/api/admin/invites', { role }),

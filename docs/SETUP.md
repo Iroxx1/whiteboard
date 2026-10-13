@@ -114,6 +114,17 @@ Passwort vergessen: In der Verwaltung beim Nutzer auf **Passwort-Link** (einmali
 
 Danach im Teilen-Menü einer beliebigen App „Whiteboard“ wählen: Der Inhalt wird sofort in der Inbox gespeichert. Tipp: „Whiteboard“ im Teilen-Menü lange drücken → **Anpinnen**. In Instagram führt „Teilen über …“ zum Android-Teilen-Menü.
 
+## 8. Telegram-Bot (optional)
+
+1. In Telegram `@BotFather` suchen (blauer Haken), **Starten**, `/newbot` senden.
+2. Anzeigenamen schicken (z. B. `Whiteboard`), dann einen Benutzernamen, der auf `bot` endet (z. B. `familie_whiteboard_bot`).
+3. BotFather antwortet mit dem **Token** (`123456789:AA…`). Es ist geheim: nicht weitergeben, nicht in Chats kopieren.
+4. Im Container in `/opt/whiteboard/.env` eintragen: `TELEGRAM_BOT_TOKEN=…`, dann `docker compose up -d`.
+5. Im Log steht `telegram bot polling`: `docker compose logs app | grep telegram`.
+6. In der App: **Einstellungen** → **Telegram verbinden** → **In Telegram öffnen** → **Starten**. Jede Person verknüpft ihr eigenes Telegram.
+
+Danach kann man dem Bot alles schicken oder in jeder App Teilen → Telegram → Bot wählen.
+
 ## Updates
 
 Siehe `docs/BETRIEB.md`.

@@ -82,3 +82,14 @@ export type ApiErrorCode =
   | 'last_admin'
   | 'file_too_large'
   | 'unsupported_type'
+  | 'telegram_unavailable'
+
+/** Telegram link state for the settings page (PLAN.md 5.7). */
+export type TelegramStatus = {
+  /** Bot configured and connected to Telegram. */
+  enabled: boolean
+  botUsername: string | null
+  linked: { username: string | null; linkedAt: number } | null
+}
+
+export type TelegramLinkCode = { url: string; expiresAt: number }

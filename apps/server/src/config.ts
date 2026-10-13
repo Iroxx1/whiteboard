@@ -28,6 +28,14 @@ const schema = z.object({
   WEB_DIST: z.string().default(path.resolve(here, '../../web/dist')),
   MIGRATIONS_DIR: z.string().default(path.resolve(here, '../drizzle')),
   APP_VERSION: z.preprocess(emptyToUndefined, z.string().default('dev')),
+  // Token from @BotFather; empty = Telegram bot off (PLAN.md 5.7).
+  TELEGRAM_BOT_TOKEN: z.preprocess(
+    emptyToUndefined,
+    z
+      .string()
+      .regex(/^\d+:[A-Za-z0-9_-]{20,}$/)
+      .optional(),
+  ),
 })
 
 export type Config = z.infer<typeof schema>

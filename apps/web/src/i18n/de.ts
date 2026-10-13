@@ -38,6 +38,7 @@ export const de = {
     last_admin: 'Es muss mindestens ein aktiver Admin bleiben.',
     file_too_large: 'Die Datei ist zu groß.',
     unsupported_type: 'Dieser Dateityp wird nicht unterstützt.',
+    telegram_unavailable: 'Der Telegram-Bot ist gerade nicht erreichbar.',
     network: 'Keine Verbindung zum Server.',
     unknown: 'Etwas ist schiefgelaufen. Bitte versuche es noch einmal.',
     retryAfter: (seconds: number) =>
@@ -239,6 +240,19 @@ export const de = {
     lastSeen: (when: string) => `zuletzt aktiv ${when}`,
     signOut: 'Abmelden',
     unknownDevice: 'Unbekanntes Gerät',
+    telegram: 'Telegram',
+    telegramOff:
+      'Der Telegram-Bot ist auf diesem Server nicht eingerichtet (TELEGRAM_BOT_TOKEN in der .env, siehe docs/SETUP.md).',
+    telegramIntro: 'Verknüpfe dein Telegram-Konto, dann landet alles, was du dem Bot schickst, in der Inbox.',
+    telegramConnect: 'Telegram verbinden',
+    telegramOpen: 'In Telegram öffnen',
+    telegramSteps:
+      'Tippe auf „In Telegram öffnen“ und dort auf „Starten“. Der Link ist 10 Minuten gültig und funktioniert einmal.',
+    telegramQr: 'Oder mit dem Handy scannen:',
+    telegramLinked: (bot: string, username: string | null, when: string) =>
+      `Verknüpft${username ? ` als @${username}` : ''} (${when}). Schick Inhalte an @${bot}.`,
+    telegramDisconnect: 'Trennen',
+    telegramExpired: 'Der Link ist abgelaufen. Bitte neu erzeugen.',
   },
   admin: {
     title: 'Verwaltung',

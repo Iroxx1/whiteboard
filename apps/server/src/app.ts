@@ -27,6 +27,14 @@ import { attachSocketServer } from './realtime/socket.ts'
 import { registerHealthRoutes } from './routes/health.ts'
 import { registerManifestRoute } from './routes/manifest.ts'
 import { registerStatic } from './routes/static.ts'
+import { type TelegramOptions, TelegramService } from './telegram/bot.ts'
+import { registerTelegramRoutes } from './telegram/routes.ts'
+
+declare module 'fastify' {
+  interface FastifyInstance {
+    telegram: TelegramService
+  }
+}
 
 const MAINTENANCE_INTERVAL_MS = 6 * 60 * 60 * 1000
 
@@ -37,6 +45,8 @@ export type BuildOptions = {
   fetchOptions?: Partial<SafeFetchOptions>
   /** Tests: receive the JSON log lines (e.g. to read the setup link). */
   logStream?: { write: (line: string) => void }
+  /** Tests: mocked Bot API. */
+  telegram?: TelegramOptions
 }
 
 export async function buildApp(config: Config, options: BuildOptions = {}): Promise<FastifyInstance> {
@@ -73,6 +83,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
     options.queue,
   )
   items.attachQueue(queue)
+  const telegram = new TelegramService(database.db, items, app.log, tmpDir, config.TELEGRAM_BOT_TOKEN, options.telegram)
   const ctx: AppContext = {
     config,
     log: app.log,
@@ -83,6 +94,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
     hub,
     items,
     queue,
+    telegram,
   }
   ctx.rooms.onSaved = (boardId, elements) => items.reconcileBoard(boardId, elements)
 
@@ -107,6 +119,9 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
   registerFileRoutes(app, ctx)
   registerItemRoutes(app, ctx)
   registerShareRoutes(app, ctx)
+  registerTelegramRoutes(app, ctx)
+  // Tests feed updates through it.
+  app.decorate('telegram', telegram)
   await registerStatic(app, config)
 
   const io = attachSocketServer(app, ctx)
@@ -120,6 +135,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
       const purgedItems = items.purgeTrash()
       if (purgedItems > 0) app.log.info({ purged: purgedItems }, 'items removed from trash')
       queue.purgeFinished()
+      telegram.purgeOld()
     } catch (error) {
       app.log.error({ err: error }, 'maintenance failed')
     }
@@ -131,11 +147,13 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
     maintenance()
     ctx.setup.init()
     queue.start()
+    telegram.start()
   })
 
   // Shutdown (SIGTERM): persist all open boards, then close the database (PLAN.md 5.3).
   app.addHook('preClose', async () => {
     clearInterval(maintenanceTimer)
+    await telegram.stop()
     // Leaving clients save their boards; then flush whatever is still dirty.
     io.disconnectSockets(true)
     io.engine.close()

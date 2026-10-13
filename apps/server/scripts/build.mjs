@@ -11,6 +11,7 @@ const common = {
   sourcemap: true,
   legalComments: 'none',
   external: ['better-sqlite3', '@node-rs/argon2', 'sharp', 'heic-convert', 'file-type'],
+  alias: { 'node-fetch': './scripts/node-fetch-stub.cjs' },
   // Some bundled dependencies are CommonJS and call require().
   banner: {
     js: "import { createRequire as __wbCreateRequire } from 'node:module'; const require = __wbCreateRequire(import.meta.url);",

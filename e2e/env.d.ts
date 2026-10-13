@@ -3,7 +3,10 @@ interface Window {
   __wb?: {
     api: {
       getSceneElements: () => readonly ({ id: string; type: string; isDeleted: boolean } & Record<string, unknown>)[]
-      getAppState: () => { collaborators: Map<string, { username?: string | null }> }
+      getAppState: () => {
+        collaborators: Map<string, { username?: string | null }>
+        selectedElementIds: Record<string, true>
+      }
     }
     sync: { isJoined: boolean }
   }

@@ -14,7 +14,7 @@ Wird vom umsetzenden Modell nach jeder Phase aktualisiert. Phasen und Abnahmekri
 | 5 | E-Mail über Cloudflare | ✅ fertig (13.10.2026), auf CT 118 ausgerollt (`sha-ae9c4f4`); Cloudflare-Einrichtung durch den Auftraggeber offen |
 | 6 | Produktivbetrieb und Härtung | ✅ fertig (13.10.2026), auf CT 118 ausgerollt (`sha-201c626`) |
 | 7 | Volltextsuche | ✅ fertig (13.10.2026), auf CT 118 ausgerollt (`sha-ebc9e5c`, 14.10.2026) |
-| 8 | OCR | ✅ fertig (14.10.2026), Ausrollen offen |
+| 8 | OCR | ✅ fertig (14.10.2026), auf CT 118 ausgerollt (`sha-a89ac34`, `OCR_ENABLED=true`) |
 | 9 | Sprachnachrichten → Text | offen |
 | 10 | Feinschliff (optional) | offen |
 
@@ -286,7 +286,7 @@ _(keine)_
 
 ### Phase 8
 
-- [ ] Neues Image auf CT 118, `OCR_ENABLED=true` in der `.env` (`.env` gesichert, Änderungsprotokoll); vorhandene Bilder/PDFs werden im Hintergrund erkannt
+- [x] Neues Image auf CT 118 (`sha-a89ac34`), `OCR_ENABLED=true`; Bestand (1 Bild, 1 PDF) verarbeitet
 - [ ] Screenshot mit Text teilen: steht nach etwa einer Minute „Erkannter Text“ in den Details, findet die Suche ein Wort daraus?
 - [ ] Foto eines Dokuments (z. B. Rechnung, Schild) teilen
 - [ ] Gescanntes PDF (z. B. aus Genius Scan) teilen: erkannter Text da?

@@ -124,7 +124,7 @@ _(keine)_
 | 13.10.2026 | Phase 4: „Dieser Bot ist privat.“ geht pro App-Start einmal an einen fremden Absender (im Speicher, keine eigene Tabelle) | PLAN.md regelt nicht, wie dauerhaft „einmalig“ ist |
 | 13.10.2026 | Phase 4: Tabelle `telegram_messages` mit zusätzlicher Spalte `kind` (`reply`/`note_prompt`); Einträge älter als 90 Tage werden gelöscht | „✏️ Notiz“ braucht die Zuordnung der Rückfrage zu den Einträgen |
 | 13.10.2026 | Phase 4: „📋 Auf Board legen“ zeigt die 8 zuletzt geänderten Boards (für alle gleich), „Mehr …“ alle nach Namen | Boards haben keine Nutzungsstatistik pro Person |
-| 13.10.2026 | Phase 4: Der Bot nutzt grammYs eigenes `node-fetch`; zwei Deprecation-Warnungen (`punycode`, `url.parse`) beim Start sind harmlos | mit Nodes eingebautem `fetch` hingen die API-Aufrufe auf CT 118 |
+| 13.10.2026 | Phase 4: grammY bleibt wie die nativen Module außerhalb des Server-Bundles (kommt per `pnpm deploy` ins Image) und nutzt sein eigenes `node-fetch`; `getMe` bricht nach 30 s ab und wird wiederholt | gebündelt bzw. mit Nodes eingebautem `fetch` hingen die API-Aufrufe auf CT 118 |
 
 ## Manuelle Tests durch den Auftraggeber
 

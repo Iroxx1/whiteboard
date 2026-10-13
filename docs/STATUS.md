@@ -10,7 +10,7 @@ Wird vom umsetzenden Modell nach jeder Phase aktualisiert. Phasen und Abnahmekri
 | 1 | Whiteboard-Kern (Konten, Boards, Echtzeit-Sync, Dark Mode) | ✅ fertig (12.10.2026), auf CT 118 ausgerollt (`sha-82a447a`) |
 | 2 | Inbox, Verarbeitung und Karten | ✅ fertig (12.10.2026), auf CT 118 ausgerollt (`sha-6745b66`; Nachbesserung `sha-0cf5ebf`: Instagram-Embed, Neuladen nach Updates, Bibliothek ausgeblendet) |
 | 3 | PWA und Teilen-Menü | ✅ fertig (12.10.2026), auf CT 118 ausgerollt (`sha-9464792`) |
-| 4 | Telegram-Bot | ✅ fertig (13.10.2026), Ausrollen offen |
+| 4 | Telegram-Bot | ✅ fertig (13.10.2026), auf CT 118 ausgerollt (`sha-d37a228`, Bot @familie_whiteboard_bot) |
 | 5 | E-Mail über Cloudflare | offen |
 | 6 | Produktivbetrieb und Härtung | offen |
 | 7 | Volltextsuche | offen |
@@ -173,8 +173,8 @@ _(keine)_
 
 ### Phase 4
 
-- [ ] Bot bei @BotFather anlegen (Anleitung `docs/SETUP.md` Schritt 8), Token in die `.env`
-- [ ] Neues Image auf CT 118 (`.env` gesichert, Änderungsprotokoll)
+- [x] Bot bei @BotFather anlegen (@familie_whiteboard_bot), Token in die `.env`
+- [x] Neues Image auf CT 118 (`sha-d37a228`, `.env` gesichert, Änderungsprotokoll)
 - [ ] Einstellungen → „Telegram verbinden“ → „In Telegram öffnen“ → Starten: meldet der Bot „✅ Verknüpft …“ und zeigt die Einstellungsseite „Verknüpft“?
 - [ ] An den Bot schicken: Link, Text, Foto, Album (mehrere Fotos), PDF, Sprachnachricht, Video, Standort – kommt alles richtig in der Inbox an („via Telegram · Maik“)?
 - [ ] Text mit `#boardname`: „✅ Auf Board ‚…‘“ und Karte im Rahmen „📥 Inbox“ des Boards?

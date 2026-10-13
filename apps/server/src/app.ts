@@ -13,6 +13,8 @@ import { purgeTrash, registerBoardRoutes } from './boards/routes.ts'
 import type { Config } from './config.ts'
 import type { AppContext } from './context.ts'
 import { openDatabase } from './db/index.ts'
+import { registerEmailRoutes } from './email/routes.ts'
+import { type EmailOptions, EmailService } from './email/service.ts'
 import { registerFileRoutes } from './files/routes.ts'
 import { registerItemRoutes } from './items/routes.ts'
 import { ItemService } from './items/service.ts'
@@ -45,6 +47,8 @@ export type BuildOptions = {
   fetchOptions?: Partial<SafeFetchOptions>
   /** Tests: receive the JSON log lines (e.g. to read the setup link). */
   logStream?: { write: (line: string) => void }
+  /** Tests: DNS answers for DKIM keys. */
+  email?: EmailOptions
   /** Tests: mocked Bot API. */
   telegram?: TelegramOptions
 }
@@ -76,13 +80,23 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
   const database = await openDatabase(config.DATA_DIR, config.MIGRATIONS_DIR, app.log)
   const hub = new RealtimeHub()
   const items = new ItemService(database.db, hub, app.log, config.DATA_DIR)
+  const email = new EmailService(database.db, items, app.log, config.DATA_DIR, tmpDir, options.email)
   const queue = new JobQueue(
     database.db,
     app.log,
-    processorJobs({ items, tmpDir, ...(options.fetchOptions ? { fetchOptions: options.fetchOptions } : {}) }),
+    {
+      ...processorJobs({ items, tmpDir, ...(options.fetchOptions ? { fetchOptions: options.fetchOptions } : {}) }),
+      ingest_email: {
+        concurrency: 1,
+        heavy: false,
+        handler: (payload) => email.process(String(payload.emailId)),
+        onFailed: (payload, error) => email.failed(String(payload.emailId), error),
+      },
+    },
     options.queue,
   )
   items.attachQueue(queue)
+  email.attachQueue(queue)
   const telegram = new TelegramService(database.db, items, app.log, tmpDir, config.TELEGRAM_BOT_TOKEN, options.telegram)
   const ctx: AppContext = {
     config,
@@ -95,6 +109,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
     items,
     queue,
     telegram,
+    email,
   }
   ctx.rooms.onSaved = (boardId, elements) => items.reconcileBoard(boardId, elements)
 
@@ -120,6 +135,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
   registerItemRoutes(app, ctx)
   registerShareRoutes(app, ctx)
   registerTelegramRoutes(app, ctx)
+  registerEmailRoutes(app, ctx)
   // Tests feed updates through it.
   app.decorate('telegram', telegram)
   await registerStatic(app, config)
@@ -136,6 +152,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
       if (purgedItems > 0) app.log.info({ purged: purgedItems }, 'items removed from trash')
       queue.purgeFinished()
       telegram.purgeOld()
+      email.purgeOld()
     } catch (error) {
       app.log.error({ err: error }, 'maintenance failed')
     }

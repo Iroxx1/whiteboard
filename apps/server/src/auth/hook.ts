@@ -19,6 +19,8 @@ const PUBLIC_API: { method: string; pattern: RegExp }[] = [
   { method: 'POST', pattern: /^\/api\/auth\/reset\/[^/]+$/ },
   { method: 'GET', pattern: /^\/api\/invites\/[^/]+$/ },
   { method: 'POST', pattern: /^\/api\/invites\/[^/]+$/ },
+  // Cloudflare email worker; checks its own bearer token (PLAN.md 5.8).
+  { method: 'POST', pattern: /^\/api\/ingest\/email$/ },
 ]
 
 function isPublicApi(method: string, path: string) {

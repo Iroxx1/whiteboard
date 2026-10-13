@@ -1,0 +1,9 @@
+# Optional: deploy with `npx wrangler deploy` instead of pasting src/index.js into the dashboard.
+# The secret is set separately: `npx wrangler secret put INGEST_TOKEN`.
+name = "whiteboard-email-ingest"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+
+[vars]
+INGEST_URL = "https://board.example.de/api/ingest/email"
+FALLBACK_FORWARD = "you@gmail.com"

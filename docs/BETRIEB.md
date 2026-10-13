@@ -86,6 +86,7 @@ Den Link im Browser öffnen und ein neues Passwort setzen. Danach sind alle ande
 | Video lässt sich nicht abspielen | Das Format kann der Browser nicht abspielen (z. B. manche .mov/.3gp); über „Herunterladen“ öffnen |
 | Telegram-Bot antwortet nicht | `docker compose logs app | grep telegram`: „token rejected“ = Token in der `.env` falsch (neu bei @BotFather mit `/token`); „not reachable“ = keine Verbindung zu Telegram, der Bot versucht es jede Minute neu. In den Einstellungen steht „nicht eingerichtet“, solange der Bot nicht verbunden ist |
 | Bot sagt „Dieser Bot ist privat.“ | Das Telegram-Konto ist nicht (mehr) verknüpft: in der App unter Einstellungen neu verbinden |
+| Mail kommt nicht in der Inbox an | `docker compose logs app | grep e-mail`: „e-mail rejected“ mit `reason`: `sender` = Absender nicht in den Einstellungen eingetragen, `dkim` = keine gültige Signatur der Absenderdomain (z. B. über einen Weiterleitungsdienst geschickt), `from` = kein eindeutiger Absender. Steht nichts im Log: Cloudflare → Email Routing → Activity log und Worker-Logs prüfen; liegt die Mail im Gmail-Postfach (Kopfzeile `X-Whiteboard-Ingest`), war der Server nicht erreichbar oder das Token falsch. Rohmails liegen 30 Tage unter `data/inbound/` |
 | Bild erscheint bei anderen nicht | Upload fehlgeschlagen (rote Meldung im Board)? Erlaubt sind PNG, JPEG, GIF, WebP, BMP, AVIF, ICO und SVG bis `MAX_UPLOAD_MB` |
 
 Logs enthalten keine Passwörter, Cookies oder Inhalte. Ausnahme ist der Einrichtungslink, solange es noch kein Konto gibt.

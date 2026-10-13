@@ -4,6 +4,7 @@ import type { SetupToken } from './auth/setup.ts'
 import type { BoardRooms } from './boards/rooms.ts'
 import type { Config } from './config.ts'
 import type { DbHandle } from './db/index.ts'
+import type { EmailService } from './email/service.ts'
 import type { ItemService } from './items/service.ts'
 import type { JobQueue } from './jobs/queue.ts'
 import type { RealtimeHub } from './realtime/hub.ts'
@@ -21,4 +22,5 @@ export type AppContext = {
   items: ItemService
   queue: JobQueue
   telegram: TelegramService
+  email: EmailService
 }

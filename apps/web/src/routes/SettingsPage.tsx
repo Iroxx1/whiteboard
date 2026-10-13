@@ -289,6 +289,69 @@ function Telegram() {
   )
 }
 
+/** Settings → e-mail: inbox address and own sender addresses (PLAN.md 5.8). */
+function Email() {
+  const queryClient = useQueryClient()
+  const [address, setAddress] = useState('')
+  const settings = useQuery({ queryKey: ['email-settings'], queryFn: api.emailSettings })
+  const add = useMutation({
+    mutationFn: () => api.addSender(address.trim()),
+    onSuccess: () => {
+      setAddress('')
+      void queryClient.invalidateQueries({ queryKey: ['email-settings'] })
+    },
+  })
+  const remove = useMutation({
+    mutationFn: api.removeSender,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['email-settings'] }),
+  })
+  const data = settings.data
+  return (
+    <Card title={de.settings.email}>
+      {data && !data.enabled && <p className="text-sm text-[var(--wb-muted)]">{de.settings.emailOff}</p>}
+      {data?.enabled && (
+        <div className="flex flex-col gap-3">
+          <p className="text-sm">{de.settings.emailIntro(data.address)}</p>
+          <div className="flex flex-col gap-1">
+            <span className="text-sm font-medium">{de.settings.senders}</span>
+            {data.senders.length === 0 && <p className="text-sm text-[var(--wb-muted)]">{de.settings.sendersEmpty}</p>}
+            <ul className="divide-y divide-[var(--wb-border)]">
+              {data.senders.map((sender) => (
+                <li key={sender.email} className="flex items-center justify-between gap-2 py-1.5 text-sm">
+                  <span className="min-w-0 truncate">{sender.email}</span>
+                  <Button onClick={() => remove.mutate(sender.email)} disabled={remove.isPending}>
+                    {de.settings.senderRemove}
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <form
+            onSubmit={(event: FormEvent) => {
+              event.preventDefault()
+              if (address.trim()) add.mutate()
+            }}
+            className="flex gap-2"
+          >
+            <input
+              type="email"
+              required
+              value={address}
+              placeholder={de.settings.senderPlaceholder}
+              onChange={(event) => setAddress(event.target.value)}
+              className="min-w-0 flex-1 rounded-lg border border-[var(--wb-border)] bg-[var(--wb-surface)] px-3 py-1.5 text-sm"
+            />
+            <Button type="submit" variant="primary" disabled={add.isPending}>
+              {de.settings.senderAdd}
+            </Button>
+          </form>
+        </div>
+      )}
+      <FormMessage error={settings.error ?? add.error ?? remove.error} />
+    </Card>
+  )
+}
+
 export function SettingsPage() {
   return (
     <Layout>
@@ -298,6 +361,9 @@ export function SettingsPage() {
         <PasswordChange />
         <div className="md:col-span-2">
           <Telegram />
+        </div>
+        <div className="md:col-span-2">
+          <Email />
         </div>
         <div className="md:col-span-2">
           <Sessions />

@@ -39,6 +39,7 @@ export const de = {
     file_too_large: 'Die Datei ist zu groß.',
     unsupported_type: 'Dieser Dateityp wird nicht unterstützt.',
     telegram_unavailable: 'Der Telegram-Bot ist gerade nicht erreichbar.',
+    sender_taken: 'Diese Adresse hat schon eine andere Person eingetragen.',
     network: 'Keine Verbindung zum Server.',
     unknown: 'Etwas ist schiefgelaufen. Bitte versuche es noch einmal.',
     retryAfter: (seconds: number) =>
@@ -252,6 +253,16 @@ export const de = {
     telegramLinked: (bot: string, username: string | null, when: string) =>
       `Verknüpft${username ? ` als @${username}` : ''} (${when}). Schick Inhalte an @${bot}.`,
     telegramDisconnect: 'Trennen',
+    email: 'E-Mail',
+    emailOff:
+      'Der E-Mail-Eingang ist auf diesem Server nicht eingerichtet (EMAIL_INGEST_TOKEN in der .env, siehe docs/SETUP.md).',
+    emailIntro: (address: string | null) =>
+      `Mails${address ? ` an ${address}` : ''} landen in der Inbox – aber nur von deinen Absenderadressen. Betreff = Titel, #hashtag im Betreff legt aufs Board, Anhänge werden zu Einträgen.`,
+    senders: 'Meine Absenderadressen',
+    sendersEmpty: 'Noch keine Adresse eingetragen.',
+    senderAdd: 'Hinzufügen',
+    senderPlaceholder: 'name@gmail.com',
+    senderRemove: 'Entfernen',
     telegramExpired: 'Der Link ist abgelaufen. Bitte neu erzeugen.',
   },
   admin: {

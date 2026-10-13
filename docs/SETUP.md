@@ -125,6 +125,32 @@ Danach im Teilen-Menü einer beliebigen App „Whiteboard“ wählen: Der Inhalt
 
 Danach kann man dem Bot alles schicken oder in jeder App Teilen → Telegram → Bot wählen.
 
+## 9. E-Mail-Eingang (optional)
+
+Mails an `board@dittgen.uk` landen in der Inbox – aber nur von eingetragenen Absenderadressen und nur mit gültiger DKIM-Signatur (Gmail signiert immer). Cloudflare nimmt die Mail an, ein kleiner Worker reicht sie an den Server weiter. Ist der Server nicht erreichbar, leitet der Worker sie an deine Gmail-Adresse weiter.
+
+**Server:**
+
+1. Ein Token erzeugen (mindestens 32 Zeichen) und in `/opt/whiteboard/.env` eintragen: `EMAIL_INGEST_TOKEN=…` und `EMAIL_ADDRESS=board@dittgen.uk`, dann `docker compose up -d`.
+
+**Cloudflare-Dashboard** (dash.cloudflare.com → Domain `dittgen.uk`):
+
+1. **Email → Email Routing → Aktivieren.** Cloudflare legt die MX- und SPF-Einträge an; bestätigen. (Vorher hatte `dittgen.uk` keine MX-Einträge, es geht also keine bestehende Mail verloren.)
+2. **Destination addresses → Add destination:** deine Gmail-Adresse eintragen und den Link in der Bestätigungsmail anklicken.
+3. **Email Workers → Create:** Name `whiteboard-email-ingest`, Vorlage egal. Im Editor den ganzen Inhalt durch `infra/cloudflare-email-worker/src/index.js` ersetzen → **Deploy**.
+4. Im Worker **Settings → Variables and Secrets → Add:**
+   - `INGEST_URL` (Typ Text) = `https://board.dittgen.uk/api/ingest/email`
+   - `FALLBACK_FORWARD` (Typ Text) = deine Gmail-Adresse aus Schritt 2
+   - `INGEST_TOKEN` (Typ **Secret**) = dasselbe Token wie in der `.env`
+   - **Deploy**/Speichern.
+5. **Email Routing → Routing rules → Create address:** Custom address `board`, Action **Send to a Worker**, Ziel `whiteboard-email-ingest` → Save.
+
+**In der App:** Einstellungen → Karte „E-Mail“ → eigene Absenderadresse(n) eintragen. Jede Person trägt ihre eigenen ein.
+
+Testen: Aus Chrome am Handy eine Seite teilen → Gmail → an `board@dittgen.uk`. Der Betreff ist dann der Seitentitel, der Link wird zur Link-Karte.
+
+Alternativ zum Dashboard: `infra/cloudflare-email-worker/wrangler.toml` anpassen und `npx wrangler deploy` (vorher `npx wrangler login`, Secret mit `npx wrangler secret put INGEST_TOKEN`).
+
 ## Updates
 
 Siehe `docs/BETRIEB.md`.

@@ -83,6 +83,7 @@ export type ApiErrorCode =
   | 'file_too_large'
   | 'unsupported_type'
   | 'telegram_unavailable'
+  | 'sender_taken'
 
 /** Telegram link state for the settings page (PLAN.md 5.7). */
 export type TelegramStatus = {
@@ -93,3 +94,9 @@ export type TelegramStatus = {
 }
 
 export type TelegramLinkCode = { url: string; expiresAt: number }
+
+/** Own sender addresses for the e-mail inbox (PLAN.md 5.8). */
+export type SenderAddress = { email: string; createdAt: number }
+
+/** Inbox address and whether the e-mail channel is configured. */
+export type EmailSettings = { enabled: boolean; address: string | null; senders: SenderAddress[] }

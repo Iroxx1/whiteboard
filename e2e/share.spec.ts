@@ -9,6 +9,12 @@ async function shareViaServiceWorker(
   fields: Record<string, string>,
   files: { name: string; text: string }[],
 ) {
+  // The first install precaches the whole app; once active it may miss claiming this page, a
+  // reload then puts the page under its control (like reopening the app on the phone).
+  await page.evaluate(async () => {
+    await navigator.serviceWorker.ready
+  })
+  if (!(await page.evaluate(() => navigator.serviceWorker.controller !== null))) await page.reload()
   await page.waitForFunction(() => navigator.serviceWorker.controller !== null)
   await page.evaluate(
     ({ fields, files }) => {

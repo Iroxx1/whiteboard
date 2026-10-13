@@ -11,7 +11,7 @@ Wird vom umsetzenden Modell nach jeder Phase aktualisiert. Phasen und Abnahmekri
 | 2 | Inbox, Verarbeitung und Karten | ✅ fertig (12.10.2026), auf CT 118 ausgerollt (`sha-6745b66`; Nachbesserung `sha-0cf5ebf`: Instagram-Embed, Neuladen nach Updates, Bibliothek ausgeblendet) |
 | 3 | PWA und Teilen-Menü | ✅ fertig (12.10.2026), auf CT 118 ausgerollt (`sha-9464792`) |
 | 4 | Telegram-Bot | ✅ fertig (13.10.2026), auf CT 118 ausgerollt (`sha-d37a228`, Bot @familie_whiteboard_bot) |
-| 5 | E-Mail über Cloudflare | offen |
+| 5 | E-Mail über Cloudflare | ✅ fertig (13.10.2026), Ausrollen offen |
 | 6 | Produktivbetrieb und Härtung | offen |
 | 7 | Volltextsuche | offen |
 | 8 | OCR | offen |
@@ -21,6 +21,16 @@ Wird vom umsetzenden Modell nach jeder Phase aktualisiert. Phasen und Abnahmekri
 ## Offene Fragen an den Auftraggeber
 
 _(keine)_
+
+## Stand Phase 5 (13.10.2026)
+
+- **Endpunkt** `POST /api/ingest/email` (Rohmail, `message/rfc822`, bis 30 MB): Bearer-Token zeitkonstant geprüft, Ratenbegrenzung (falsche Tokens pro IP, insgesamt 120 Mails/15 min). Ohne `EMAIL_INGEST_TOKEN` gibt es den Endpunkt nicht.
+- **Prüfung:** gültige DKIM-Signatur, ausgerichtet an der From-Domain (mailauth), genau ein From, Absender in „Meine Absenderadressen“ eines aktiven Kontos. Sonst 403 → der Worker weist die Mail ab. Abgelehnte Mails werden nicht gespeichert, nur der Grund.
+- **Ablage:** angenommene Rohmails unter `data/inbound/<jahr>/<monat>/<id>.eml`, 30 Tage; gleiche Message-ID wird nicht doppelt verarbeitet.
+- **Auswertung** (Job `ingest_email`): Betreff ohne „Re:/Fwd:/WG:/AW:“ → Titel (mit Hashtag-Logik); Text bevorzugt `text/plain`, sonst aus HTML; Signatur ab `-- `, zitierte Antworten („Am … schrieb …“, `>`) und der Kopf weitergeleiteter Mails fallen weg; Anhänge → Einträge (Signatur-Logos unter 20 KB, `smime.p7s`, `.ics` ignoriert); alle Einträge einer Mail bilden eine Gruppe.
+- **Einstellungen:** Karte „E-Mail“ mit Empfangsadresse und „Meine Absenderadressen“ (bis 10 pro Person; Gmail-Adressen ohne Punkte und `+…` verglichen, jede Adresse gehört nur einer Person).
+- **Worker** `infra/cloudflare-email-worker/src/index.js` (reines JavaScript zum Einfügen im Dashboard, `wrangler.toml` optional): liest die Mail einmal ein, schickt sie an den Server; 202 → fertig, 403 → abweisen, alles andere → Weiterleitung an Gmail.
+- **Tests:** DKIM mit echtem Schlüssel und nachgebildetem DNS (Gmail-Teilen, HTML-only, Signatur, Antwort, Weiterleitung, mehrere Anhänge, fremder/gefälschter Absender, doppelte Zustellung), Worker mit nachgebildetem `fetch`.
 
 ## Stand Phase 4 (13.10.2026)
 
@@ -125,6 +135,12 @@ _(keine)_
 | 13.10.2026 | Phase 4: Tabelle `telegram_messages` mit zusätzlicher Spalte `kind` (`reply`/`note_prompt`); Einträge älter als 90 Tage werden gelöscht | „✏️ Notiz“ braucht die Zuordnung der Rückfrage zu den Einträgen |
 | 13.10.2026 | Phase 4: „📋 Auf Board legen“ zeigt die 8 zuletzt geänderten Boards (für alle gleich), „Mehr …“ alle nach Namen | Boards haben keine Nutzungsstatistik pro Person |
 | 13.10.2026 | Phase 4: grammY bleibt wie die nativen Module außerhalb des Server-Bundles (kommt per `pnpm deploy` ins Image) und nutzt sein eigenes `node-fetch`; `getMe` bricht nach 30 s ab und wird wiederholt | gebündelt bzw. mit Nodes eingebautem `fetch` hingen die API-Aufrufe auf CT 118 |
+| 13.10.2026 | Phase 5: Adresse `board@dittgen.uk`; Email Routing übernimmt `dittgen.uk` (bisher keine MX-Einträge) | Auftraggeber; DNS-Abfrage |
+| 13.10.2026 | Phase 5: Worker wird im Cloudflare-Dashboard eingefügt statt per wrangler; deshalb reines JavaScript statt TypeScript | Auftraggeber |
+| 13.10.2026 | Phase 5: Ersatzweiterleitung an maik.dittgen@gmail.com | Auftraggeber |
+| 13.10.2026 | Phase 5: Der Worker puffert die Mail vor dem Senden (kein Streaming), damit `forward()` danach sicher funktioniert; Cloudflare nimmt ohnehin höchstens 25 MB an | PLAN.md 5.8 „in Phase 5 testen“ |
+| 13.10.2026 | Phase 5: Zusätzliche Einstellung `EMAIL_ADDRESS` (nur Anzeige); Tabelle `inbound_emails` mit Status `queued/done/empty/failed/rejected` und Grund; abgelehnte Mails ohne Rohmail | Fehlersuche ohne Inhalte im Log |
+| 13.10.2026 | Phase 5: Der Worker leitet auch bei 401 (falsches Token) und anderen Fehlern an Gmail weiter, nur 403 wird abgewiesen | so geht bei Fehlkonfiguration nichts verloren |
 
 ## Manuelle Tests durch den Auftraggeber
 
@@ -181,3 +197,13 @@ _(keine)_
 - [ ] Knöpfe: „📋 Auf Board legen“ → Board wählen; „✏️ Notiz“ → Notiz als Antwort schicken; „🗑️ Löschen“
 - [ ] `/boards`, `/inbox`, `/hilfe`
 - [ ] Von einem anderen Telegram-Konto (falls zur Hand) etwas schicken: nur „Dieser Bot ist privat.“, nichts in der Inbox?
+
+### Phase 5
+
+- [ ] Neues Image auf CT 118, Token und Adresse in der `.env` (`.env` gesichert, Änderungsprotokoll)
+- [ ] Cloudflare: Email Routing aktivieren, Gmail-Adresse bestätigen, Worker einfügen + Variablen, Regel `board@dittgen.uk` → Worker (`docs/SETUP.md` Schritt 9)
+- [ ] App: Einstellungen → „E-Mail“ → eigene Gmail-Adresse eintragen
+- [ ] Chrome am Handy → Teilen → Gmail → an `board@dittgen.uk`: Link-Karte mit Seitentitel?
+- [ ] Mail mit `#boardname` im Betreff und zwei Anhängen (Foto, PDF): liegen beide auf dem Board, als Gruppe?
+- [ ] Mail von einer nicht eingetragenen Adresse: kommt eine Rückweisung („Absender nicht berechtigt“), nichts in der Inbox?
+- [ ] Optional: `docker compose stop app` (kurz!), Testmail schicken, `docker compose start app`: liegt die Mail im Gmail-Postfach?

@@ -6,6 +6,9 @@ const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS'])
 // Started by the operating system's share sheet: the browser sends `Sec-Fetch-Site: none`.
 const OS_INITIATED_PATHS = new Set(['/share-target'])
 
+// Server-to-server calls with a bearer token and without cookies; CSRF does not apply.
+const TOKEN_PATHS = new Set(['/api/ingest/email'])
+
 /**
  * CSRF protection in addition to SameSite=Lax cookies (PLAN.md 5.12): every state-changing
  * request must come from our own origin.
@@ -19,6 +22,7 @@ export function originGuard(config: Config) {
     const site = request.headers['sec-fetch-site']
     const path = request.url.split('?')[0] ?? ''
     if (site === 'same-origin') return
+    if (TOKEN_PATHS.has(path) && request.headers.cookie === undefined) return
     if (site === 'none' && OS_INITIATED_PATHS.has(path)) return
     if (site === undefined && request.headers.origin === publicOrigin) return
 

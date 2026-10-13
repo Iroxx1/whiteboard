@@ -260,3 +260,41 @@ export const telegramMessages = sqliteTable(
   },
   (table) => [uniqueIndex('telegram_messages_unique').on(table.chatId, table.messageId)],
 )
+
+// --- Phase 5: e-mail via Cloudflare Email Routing (PLAN.md 5.2, 5.8) ---
+
+export const userSenders = sqliteTable(
+  'user_senders',
+  {
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    // As entered (shown in the settings).
+    email: text('email').notNull(),
+    // Lower case; for Gmail without dots and +suffix (PLAN.md 5.8, step 4).
+    emailNormalized: text('email_normalized').notNull().unique(),
+    createdAt: integer('created_at').notNull(),
+  },
+  (table) => [index('user_senders_user_idx').on(table.userId)],
+)
+
+export const inboundEmails = sqliteTable(
+  'inbound_emails',
+  {
+    id: text('id').primaryKey(),
+    receivedAt: integer('received_at').notNull(),
+    userId: text('user_id').references(() => users.id, { onDelete: 'set null' }),
+    messageId: text('message_id'),
+    // Relative to DATA_DIR/inbound; null for rejected mails (not stored).
+    path: text('path'),
+    size: integer('size').notNull(),
+    status: text('status', { enum: ['queued', 'done', 'empty', 'failed', 'rejected'] }).notNull(),
+    // Why a mail was rejected or failed (never the content).
+    reason: text('reason'),
+    itemIds: text('item_ids').notNull().default('[]'),
+  },
+  (table) => [
+    index('inbound_emails_message_idx').on(table.messageId),
+    index('inbound_emails_received_idx').on(table.receivedAt),
+  ],
+)

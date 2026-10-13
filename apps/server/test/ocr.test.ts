@@ -31,7 +31,8 @@ describe('ocr text from tesseract tsv', () => {
 })
 
 // Text recognition with the real tesseract (installed in CI and in the image, PLAN.md 5.10).
-describe.runIf(hasTool('tesseract', ['--version']))('ocr jobs', () => {
+// Tesseract runs with one thread: allow up to a minute per test.
+describe.runIf(hasTool('tesseract', ['--version']))('ocr jobs', { timeout: 60_000 }, () => {
   let test: TestApp
   let cookie: string
 

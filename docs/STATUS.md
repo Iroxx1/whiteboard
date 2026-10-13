@@ -13,7 +13,7 @@ Wird vom umsetzenden Modell nach jeder Phase aktualisiert. Phasen und Abnahmekri
 | 4 | Telegram-Bot | ✅ fertig (13.10.2026), auf CT 118 ausgerollt (`sha-d37a228`, Bot @familie_whiteboard_bot) |
 | 5 | E-Mail über Cloudflare | ✅ fertig (13.10.2026), auf CT 118 ausgerollt (`sha-ae9c4f4`); Cloudflare-Einrichtung durch den Auftraggeber offen |
 | 6 | Produktivbetrieb und Härtung | ✅ fertig (13.10.2026), auf CT 118 ausgerollt (`sha-201c626`) |
-| 7 | Volltextsuche | ✅ fertig (13.10.2026), Ausrollen offen |
+| 7 | Volltextsuche | ✅ fertig (13.10.2026), auf CT 118 ausgerollt (`sha-ebc9e5c`, 14.10.2026) |
 | 8 | OCR | offen |
 | 9 | Sprachnachrichten → Text | offen |
 | 10 | Feinschliff (optional) | offen |
@@ -262,7 +262,7 @@ _(keine)_
 
 ### Phase 7
 
-- [ ] Neues Image auf CT 118 (`update.sh`, Änderungsprotokoll); die App baut beim ersten Start den Index
+- [x] Neues Image auf CT 118 (`sha-ebc9e5c`, Index beim Start aufgebaut: 7 Einträge, 1 Board, 6 Board-Texte)
 - [ ] Lupe oben bzw. Strg+K: nach einem Wort aus einem PDF, einem Zeitungsartikel (Link), einer Haftnotiz und einem Boardnamen suchen – alles gefunden?
 - [ ] Wortteil suchen (z. B. „schlauch“ für „Gartenschlauch“)
 - [ ] Treffer „Auf Boards“ anklicken: öffnet sich das Board an der richtigen Stelle, ist die Notiz ausgewählt?

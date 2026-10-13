@@ -19,6 +19,8 @@ const PUBLIC_API: { method: string; pattern: RegExp }[] = [
   { method: 'POST', pattern: /^\/api\/auth\/reset\/[^/]+$/ },
   { method: 'GET', pattern: /^\/api\/invites\/[^/]+$/ },
   { method: 'POST', pattern: /^\/api\/invites\/[^/]+$/ },
+  // Browsers send CSP violation reports without credentials.
+  { method: 'POST', pattern: /^\/api\/csp-report$/ },
   // Cloudflare email worker; checks its own bearer token (PLAN.md 5.8).
   { method: 'POST', pattern: /^\/api\/ingest\/email$/ },
 ]

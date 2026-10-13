@@ -1,0 +1,32 @@
+# Weekly grouped dependency updates (PLAN.md 8.9). CI must be green before merging; Excalidraw is
+# patched (patches/), so its updates are reviewed by hand.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      timezone: Europe/Berlin
+    open-pull-requests-limit: 5
+    ignore:
+      - dependency-name: "@excalidraw/excalidraw"
+        update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
+    groups:
+      minor-and-patch:
+        update-types: ["minor", "patch"]
+  - package-ecosystem: docker
+    directory: /infra/docker
+    schedule:
+      interval: weekly
+      day: monday
+      timezone: Europe/Berlin
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      timezone: Europe/Berlin
+    groups:
+      actions:
+        patterns: ["*"]

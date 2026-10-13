@@ -1,6 +1,6 @@
 # Betrieb
 
-Updates, Sicherungen, Wiederherstellung und Fehlersuche. Stand: Phase 2. Alle Befehle laufen im Container 118 (`pct enter 118`) im Ordner `/opt/whiteboard`.
+Updates, Sicherungen, Wiederherstellung und Fehlersuche. Stand: Phase 6. Alle Befehle laufen im Container 118 (`pct enter 118`) im Ordner `/opt/whiteboard`.
 
 ## Was liegt wo?
 
@@ -11,57 +11,63 @@ Updates, Sicherungen, Wiederherstellung und Fehlersuche. Stand: Phase 2. Alle Be
 | `/opt/whiteboard/data/files/board/` | Bilder, die direkt aufs Board gezogen oder eingefügt wurden |
 | `/opt/whiteboard/data/files/items/<jahr>/<monat>/<id>/` | Inbox-Einträge: Original, Anzeige- und Vorschauversionen |
 | `/opt/whiteboard/data/tmp/` | laufende Uploads und Verarbeitung (wird beim Start geleert) |
-| `/opt/whiteboard/data/backups/` | automatische Datenbank-Sicherungen vor Updates mit neuen Migrationen |
+| `/opt/whiteboard/data/backups/` | tägliche Datenbank-Sicherungen `db-JJJJ-MM-TT.sqlite` (14 Tage) und Sicherungen vor Migrationen (die 5 neuesten) |
+| `/opt/whiteboard/data/inbound/` | angenommene Rohmails (30 Tage) |
+| `/opt/whiteboard/update.sh`, `restore-db.sh` | Update und Datenbank-Wiederherstellung (aus `infra/scripts/`) |
 
 ## Update
 
 1. Neues Image-Tag nachsehen: GitHub → Iroxx1/whiteboard → Packages → `whiteboard` (Format `sha-1a2b3c4`). Das Image entsteht automatisch, wenn CI auf `main` grün ist.
-2. `.env` sichern und das Tag eintragen:
+2. Im Container:
 
    ```bash
-   cp .env .env.bak-$(date +%Y%m%d-%H%M)
-   sed -i 's/^WB_IMAGE_TAG=.*/WB_IMAGE_TAG=sha-1a2b3c4/' .env
+   cd /opt/whiteboard
+   ./update.sh sha-1a2b3c4
    ```
 
-3. Neues Image holen und starten:
+   Das Skript sichert die `.env` (`.env.bak-<Zeit>`), trägt das Tag ein, holt das Image, startet neu, wartet auf „healthy“ und entfernt alte Whiteboard-Images (die drei neuesten bleiben für ein schnelles Zurück).
 
-   ```bash
-   docker compose pull && docker compose up -d
-   docker compose ps          # Status "healthy" abwarten
-   docker compose logs --tail=50 app
-   ```
+Ohne Skript geht es auch von Hand: `.env` sichern, `WB_IMAGE_TAG` ändern, `docker compose pull && docker compose up -d`.
 
 Beim Start prüft die App, ob es neue Datenbank-Migrationen gibt. Falls ja, legt sie **vorher** eine Kopie der Datenbank in `data/backups/pre-migration-<Zeit>.sqlite` an.
 
-**Zurück zur alten Version:** altes Tag in `.env` eintragen und `docker compose up -d`. Hat das neue Image die Datenbank migriert, zusätzlich die Datenbank aus `data/backups/pre-migration-…` zurückholen (siehe „Datenbank wiederherstellen“).
+**Zurück zur alten Version:** `./update.sh <altes Tag>`. Hat das neue Image die Datenbank migriert, zusätzlich die Datenbank aus `data/backups/pre-migration-…` zurückholen (siehe „Datenbank wiederherstellen“).
 
 Beim Stoppen oder Neustarten (`docker compose up -d`, `restart`, `stop`) speichert die App alle offenen Boards, bevor sie sich beendet. Verloren gehen höchstens Änderungen, die in den letzten ~2 Sekunden noch unterwegs waren; offene Browser schicken sie nach dem Neuverbinden automatisch erneut.
 
 ## Sicherungen
 
-- **Proxmox:** CT 118 ist im täglichen Backup-Job (03:00) enthalten. Damit sind Datenbank, Bilder und `.env` gesichert.
-- **Verlauf pro Board:** Die App speichert automatisch Zwischenstände (alle 30 Minuten, wenn sich etwas geändert hat; Aufbewahrung: 48 h alle, dann einer pro Tag für 30 Tage, dann einer pro Woche für 6 Monate). Im Board: Menü ☰ → **Verlauf** → **Wiederherstellen** oder **Version jetzt speichern**.
-- **Papierkorb:** Gelöschte Boards bleiben 30 Tage im Papierkorb (Board-Übersicht unten), gelöschte Inbox-Einträge 30 Tage im Tab „Papierkorb“ der Inbox-Leiste. Danach löscht die App sie endgültig, bei Einträgen samt Dateien.
-- Tägliche Datenbank-Abzüge innerhalb der App folgen in Phase 6.
+- **Täglich in der App (`backup_db`):** ab 03:30 (Zeitzone `TZ`) ein konsistenter Abzug der Datenbank nach `data/backups/db-JJJJ-MM-TT.sqlite`, 14 Tage aufbewahrt. War die App um 03:30 aus, holt sie den Abzug am selben Tag nach. In der Verwaltung → **System** stehen Zeitpunkt und Größe der letzten Sicherung; **Jetzt sichern** erneuert die heutige Sicherung (z. B. vor einer riskanten Änderung).
+- **Vor Updates mit Migrationen:** automatisch `data/backups/pre-migration-<Zeit>.sqlite`; die fünf neuesten bleiben.
+- **Proxmox:** CT 118 ist im täglichen Backup-Job (03:00, eine Sicherung) enthalten: Datenbank, alle Dateien, `.env`. Bewusst so belassen (Auftraggeber, 13.10.2026): Ältere Stände der Datenbank liefern die App-Sicherungen; die Dateien ändern sich nur durch Hinzufügen und Aufräumen.
+- **Verlauf pro Board:** automatische Zwischenstände (alle 30 Minuten, wenn sich etwas geändert hat; 48 h alle, dann einer pro Tag für 30 Tage, dann einer pro Woche für 6 Monate). Im Board: Menü ☰ → **Verlauf**.
+- **Papierkorb:** gelöschte Boards und Inbox-Einträge 30 Tage.
+- **Aufräumen (automatisch):** Board-Bilder, die weder auf einem Board noch in einem Verlaufsstand vorkommen und älter als 30 Tage sind, löscht die App einmal pro Woche; Rohmails nach 30 Tagen.
 
 ## Datenbank wiederherstellen
 
-1. App stoppen: `docker compose stop app`
-2. Aktuelle Datenbank beiseitelegen:
+Im Container:
 
-   ```bash
-   ALT=data/db-defekt-$(date +%Y%m%d-%H%M)
-   mkdir -p "$ALT" && mv data/db/whiteboard.sqlite* "$ALT"/
-   ```
+```bash
+cd /opt/whiteboard
+./restore-db.sh                                   # zeigt die vorhandenen Sicherungen
+./restore-db.sh data/backups/db-2026-10-13.sqlite
+```
 
-3. Sicherung zurückkopieren (Beispiel: Sicherung vor einer Migration):
+Das Skript stoppt die App, **verschiebt** die aktuelle Datenbank nach `data/db-vorher-<Zeit>/` (es wird nichts gelöscht), spielt die Sicherung ein und startet die App wieder.
 
-   ```bash
-   cp data/backups/pre-migration-<Zeit>.sqlite data/db/whiteboard.sqlite
-   chown 1000:1000 data/db/whiteboard.sqlite
-   ```
+- Bei einer Sicherung **vor einer Migration** vorher das alte Image-Tag eintragen (`./update.sh <altes Tag>`), sonst migriert die App die Datenbank beim Start erneut.
+- Dateien (Bilder, Anhänge) liegen nicht in der Datenbank. Fehlen sie, aus dem Proxmox-Backup zurückholen: `pct restore` in einen **neuen** Container oder einzelne Ordner aus dem Backup-Archiv entpacken.
+- Ganz ohne Skript: App stoppen, `data/db/whiteboard.sqlite*` beiseitelegen, Sicherung als `data/db/whiteboard.sqlite` kopieren, `chown 1000:1000`, starten.
 
-4. Passendes Image-Tag in `.env` eintragen (bei einer Sicherung vor einer Migration: das alte Tag) und `docker compose up -d`.
+Getestet am 14.10.2026 in einem Wegwerf-Container (siehe `docs/STATUS.md`, Phase 6).
+
+## Überwachung
+
+- **`/healthz`:** Datenbank erreichbar, `/data` beschreibbar und mehr als 10 % frei. Uptime Kuma kann diese Adresse prüfen.
+- **Verwaltung → System:** Version, Inhalt, freier Speicher, letzte Sicherung, Verarbeitung (wartend, laufend, fehlgeschlagen mit **Erneut versuchen**), Telegram- und E-Mail-Status.
+- **Speicherwarnung:** Admins sehen oben ein rotes Banner, wenn weniger als 15 % frei sind. Abhilfe: Papierkorb leeren (lassen) oder den Container vergrößern (`pct resize 118 rootfs +10G` auf dem Proxmox-Host).
+- **CSP-Meldungen:** Blockiert die Content Security Policy etwas im Browser, steht im Log `csp violation` mit Art und Quelle: `docker compose logs app | grep "csp violation"`. Bekannt und harmlos: `script-src eval` beim Export als SVG (Excalidraw bettet dann die Schrift nicht ein, sondern verweist auf sie).
 
 ## Passwort-Link über die Kommandozeile
 

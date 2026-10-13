@@ -17,6 +17,7 @@ import type {
   SenderAddress,
   SessionInfo,
   SnapshotInfo,
+  SystemInfo,
   TelegramLinkCode,
   TelegramStatus,
   ThemePreference,
@@ -83,7 +84,9 @@ export const api = {
   updateUser: (id: string, body: { disabled?: boolean; role?: Role }) =>
     request<AdminUser>('PATCH', `/api/admin/users/${enc(id)}`, body),
   resetLink: (id: string) => request<OneTimeLink>('POST', `/api/admin/users/${enc(id)}/reset-link`),
-  system: () => get<{ version: string; users: number; boards: number; dbBytes: number }>('/api/admin/system'),
+  system: () => get<SystemInfo>('/api/admin/system'),
+  retryJobs: (id?: string) => request<{ retried: number }>('POST', '/api/admin/jobs/retry', id ? { id } : {}),
+  backupNow: () => request<{ file: string | null }>('POST', '/api/admin/backup'),
 
   boards: (trash = false) => get<BoardSummary[]>(`/api/boards${trash ? '?trash=1' : ''}`),
   board: (id: string) => get<BoardDetail>(`/api/boards/${enc(id)}`),

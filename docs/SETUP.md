@@ -1,6 +1,6 @@
 # Einrichtung
 
-Schritt-für-Schritt-Anleitung für den Betrieb auf Proxmox. Stand: Phase 1.
+Schritt-für-Schritt-Anleitung für den Betrieb auf Proxmox. Stand: Phase 6. Dauer ohne Cloudflare-Schritte: etwa 15 Minuten.
 
 > **Abweichung vom Plan (mit dem Auftraggeber entschieden, 12.10.2026):** Das Whiteboard läuft in einem **LXC-Container mit Docker** statt in einer eigenen VM, und es nutzt den **bestehenden Cloudflare-Tunnel** (Connector läuft in Home Assistant) statt eines eigenen `cloudflared`-Containers. Die Anleitung beschreibt diesen Weg. Der Plan-Weg (VM + eigener Tunnel) bleibt über das Compose-Profil `tunnel` möglich.
 
@@ -19,37 +19,28 @@ pct start 118
 - Speicher wächst mit den Dateien; vergrößern geht später mit `pct resize 118 rootfs +10G`.
 - In der Fritz!Box die IP-Adresse des Containers fest zuweisen.
 
-## 2. Docker im Container installieren
+## 2. Grundinstallation per Skript
 
-Im Container (`pct enter 118`):
+Im Container (`pct enter 118`, bzw. per SSH in einer VM) als root:
 
 ```bash
-apt-get update && apt-get -y full-upgrade
-apt-get install -y ca-certificates curl unattended-upgrades
-install -m 0755 -d /etc/apt/keyrings
-curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
-echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian trixie stable" \
-  > /etc/apt/sources.list.d/docker.list
-apt-get update && apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+apt-get update && apt-get install -y curl
+curl -fsSL https://raw.githubusercontent.com/Iroxx1/whiteboard/main/infra/scripts/setup-vm.sh | bash
 ```
 
-Log-Rotation für alle Container (`/etc/docker/daemon.json`):
+Das Skript `infra/scripts/setup-vm.sh` (vorher gern lesen) erledigt:
 
-```json
-{ "log-driver": "json-file", "log-opts": { "max-size": "10m", "max-file": "3" } }
-```
+- Debian-Updates und **automatische Sicherheitsupdates** (`unattended-upgrades`),
+- **Docker** mit Compose-Plugin aus dem offiziellen Docker-Repository, Log-Rotation (10 MB × 3),
+- den Ordner `/opt/whiteboard` mit `docker-compose.yml`, `.env` (aus `.env.example`, nur beim ersten Mal), `update.sh` und `restore-db.sh`.
 
-Danach `systemctl restart docker`.
+Es lässt sich gefahrlos erneut ausführen; eine vorhandene `.env` bleibt unverändert.
 
 ## 3. Whiteboard einrichten
 
 ```bash
-mkdir -p /opt/whiteboard/data
 cd /opt/whiteboard
-curl -fsSLO https://raw.githubusercontent.com/Iroxx1/whiteboard/main/infra/compose/docker-compose.yml
-curl -fsSL https://raw.githubusercontent.com/Iroxx1/whiteboard/main/infra/compose/.env.example -o .env
-chmod 600 .env
-chown 1000:1000 data          # die App läuft im Container als Benutzer "node" (UID 1000)
+nano .env
 ```
 
 In `.env` mindestens setzen:

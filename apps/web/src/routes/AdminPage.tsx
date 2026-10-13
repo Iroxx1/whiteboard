@@ -2,11 +2,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { AdminUser, OneTimeLink, Role } from '@wb/shared'
 import { useState } from 'react'
 import { de } from '../i18n/de.ts'
-import { api, formatBytes } from '../lib/api.ts'
+import { api } from '../lib/api.ts'
 import { useMe } from '../lib/auth.tsx'
 import { formatDate, formatDateTime } from '../lib/format.ts'
 import { Button, Card, CopyLink, Dialog, FormMessage } from '../ui/kit.tsx'
 import { Layout } from '../ui/Layout.tsx'
+import { SystemCard } from './SystemCard.tsx'
 
 type ShownLink = { title: string; text: string; link: OneTimeLink }
 
@@ -67,7 +68,6 @@ function UserRow({ user, self, onLink }: { user: AdminUser; self: boolean; onLin
 export function AdminPage() {
   const me = useMe()
   const users = useQuery({ queryKey: ['admin-users'], queryFn: api.users })
-  const system = useQuery({ queryKey: ['admin-system'], queryFn: api.system })
   const [inviteAdmin, setInviteAdmin] = useState(false)
   const [shown, setShown] = useState<ShownLink | null>(null)
   const invite = useMutation({
@@ -100,18 +100,7 @@ export function AdminPage() {
             ))}
           </ul>
         </Card>
-        {system.data && (
-          <Card title={de.admin.system}>
-            <dl className="grid grid-cols-[8rem_1fr] gap-1 text-sm">
-              <dt className="text-[var(--wb-muted)]">{de.admin.version}</dt>
-              <dd className="font-mono">{system.data.version}</dd>
-              <dt className="text-[var(--wb-muted)]">{de.admin.dbSize}</dt>
-              <dd>{formatBytes(system.data.dbBytes)}</dd>
-              <dt className="text-[var(--wb-muted)]">{de.nav.boards}</dt>
-              <dd>{de.admin.counts(system.data.users, system.data.boards)}</dd>
-            </dl>
-          </Card>
-        )}
+        <SystemCard />
       </div>
 
       <Dialog open={shown !== null} onOpenChange={(open) => !open && setShown(null)} title={shown?.title ?? ''}>

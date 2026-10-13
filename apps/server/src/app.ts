@@ -22,10 +22,13 @@ import { registerShareRoutes } from './items/share.ts'
 import { JobQueue, type QueueOptions } from './jobs/queue.ts'
 import { originGuard } from './lib/originGuard.ts'
 import type { SafeFetchOptions } from './lib/safeFetch.ts'
+import { securityHeaders } from './lib/securityHeaders.ts'
 import { registerMeRoutes } from './me/routes.ts'
+import { collectBoardFiles, dailyBackup } from './ops/maintenance.ts'
 import { processorJobs } from './processors/index.ts'
 import { RealtimeHub } from './realtime/hub.ts'
 import { attachSocketServer } from './realtime/socket.ts'
+import { registerCspReportRoute } from './routes/cspReport.ts'
 import { registerHealthRoutes } from './routes/health.ts'
 import { registerManifestRoute } from './routes/manifest.ts'
 import { registerStatic } from './routes/static.ts'
@@ -39,6 +42,7 @@ declare module 'fastify' {
 }
 
 const MAINTENANCE_INTERVAL_MS = 6 * 60 * 60 * 1000
+const BACKUP_CHECK_MS = 10 * 60 * 1000
 
 export type BuildOptions = {
   rooms?: Partial<RoomOptions>
@@ -118,14 +122,12 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
     limits: { fileSize: config.MAX_UPLOAD_MB * 1024 * 1024, files: 50, fields: 20, fieldSize: 64 * 1024 },
   })
 
-  app.addHook('onSend', async (_request, reply) => {
-    reply.header('X-Content-Type-Options', 'nosniff')
-    reply.header('Referrer-Policy', 'strict-origin-when-cross-origin')
-  })
+  app.addHook('onSend', securityHeaders)
   app.addHook('onRequest', originGuard(config))
   registerAuthHook(app, ctx)
 
   registerHealthRoutes(app, ctx)
+  registerCspReportRoute(app)
   registerManifestRoute(app, config)
   registerAuthRoutes(app, ctx)
   registerMeRoutes(app, ctx)
@@ -153,6 +155,8 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
       queue.purgeFinished()
       telegram.purgeOld()
       email.purgeOld()
+      const collected = collectBoardFiles(database.db, config.DATA_DIR)
+      if (collected > 0) app.log.info({ removed: collected }, 'unused board images removed')
     } catch (error) {
       app.log.error({ err: error }, 'maintenance failed')
     }
@@ -160,8 +164,18 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
   const maintenanceTimer = setInterval(maintenance, MAINTENANCE_INTERVAL_MS)
   maintenanceTimer.unref()
 
+  // backup_db (PLAN.md 7.6): checked every 10 minutes, runs once a day from 03:30.
+  const backup = () =>
+    dailyBackup(database.sqlite, config.DATA_DIR).then(
+      (file) => file && app.log.info({ file: path.basename(file) }, 'daily database backup written'),
+      (error: unknown) => app.log.error({ err: error }, 'daily database backup failed'),
+    )
+  const backupTimer = setInterval(() => void backup(), BACKUP_CHECK_MS)
+  backupTimer.unref()
+
   app.addHook('onReady', async () => {
     maintenance()
+    void backup()
     ctx.setup.init()
     queue.start()
     telegram.start()
@@ -170,6 +184,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
   // Shutdown (SIGTERM): persist all open boards, then close the database (PLAN.md 5.3).
   app.addHook('preClose', async () => {
     clearInterval(maintenanceTimer)
+    clearInterval(backupTimer)
     await telegram.stop()
     // Leaving clients save their boards; then flush whatever is still dirty.
     io.disconnectSockets(true)

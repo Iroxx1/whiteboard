@@ -1,13 +1,15 @@
 import fs from 'node:fs'
-import { type AdminUser, type OneTimeLink, ulid } from '@wb/shared'
-import { and, asc, count, eq, isNull, ne } from 'drizzle-orm'
+import path from 'node:path'
+import { type AdminUser, type OneTimeLink, type SystemInfo, ulid } from '@wb/shared'
+import { and, asc, count, eq, gt, isNull, ne, sum } from 'drizzle-orm'
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { authOf, requireAdmin } from '../auth/hook.ts'
 import type { AppContext } from '../context.ts'
-import { boards, invites, passwordResets, users } from '../db/schema.ts'
+import { assets, boards, inboundEmails, invites, items, passwordResets, users } from '../db/schema.ts'
 import { noStore, parseBody, sendError } from '../lib/http.ts'
 import { randomToken, sha256 } from '../lib/tokens.ts'
+import { dailyBackup, lastBackup, STORAGE_WARN_FREE, storage } from '../ops/maintenance.ts'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 export const INVITE_LIFETIME_MS = 7 * DAY_MS
@@ -114,10 +116,11 @@ export function registerAdminRoutes(app: FastifyInstance, ctx: AppContext) {
     return { url: `${ctx.config.PUBLIC_URL}/reset/${token}`, expiresAt } satisfies OneTimeLink
   })
 
-  // Minimal system page for Phase 1; jobs, storage and backups follow in Phase 6 (PLAN.md 7.7).
-  app.get('/api/admin/system', async () => {
+  // System page (PLAN.md 7.7): version, storage, backups, jobs, Telegram and e-mail status.
+  app.get('/api/admin/system', async (): Promise<SystemInfo> => {
     const userCount = db.select({ n: count() }).from(users).get()?.n ?? 0
     const boardCount = db.select({ n: count() }).from(boards).where(isNull(boards.deletedAt)).get()?.n ?? 0
+    const itemCount = db.select({ n: count() }).from(items).where(ne(items.status, 'trashed')).get()?.n ?? 0
     let dbBytes = 0
     for (const suffix of ['', '-wal']) {
       try {
@@ -126,6 +129,58 @@ export function registerAdminRoutes(app: FastifyInstance, ctx: AppContext) {
         // WAL file may not exist.
       }
     }
-    return { version: ctx.config.APP_VERSION, users: userCount, boards: boardCount, dbBytes }
+    const filesBytes =
+      db
+        .select({ n: sum(assets.size) })
+        .from(assets)
+        .get()?.n ?? 0
+    const space = storage(ctx.config.DATA_DIR)
+    const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000
+    const mails = { done: 0, empty: 0, queued: 0, failed: 0, rejected: 0 }
+    for (const row of db
+      .select({ status: inboundEmails.status, n: count() })
+      .from(inboundEmails)
+      .where(gt(inboundEmails.receivedAt, weekAgo))
+      .groupBy(inboundEmails.status)
+      .all()) {
+      mails[row.status] = row.n
+    }
+    return {
+      version: ctx.config.APP_VERSION,
+      users: userCount,
+      boards: boardCount,
+      items: itemCount,
+      dbBytes,
+      filesBytes: Number(filesBytes),
+      storage: { ...space, warning: space.freeShare < STORAGE_WARN_FREE },
+      lastBackup: lastBackup(ctx.config.DATA_DIR),
+      jobs: ctx.queue.stats(),
+      telegram: {
+        configured: Boolean(ctx.config.TELEGRAM_BOT_TOKEN),
+        connected: ctx.telegram.enabled,
+        polling: ctx.telegram.isRunning,
+        username: ctx.telegram.username,
+      },
+      email: {
+        configured: Boolean(ctx.config.EMAIL_INGEST_TOKEN),
+        address: ctx.config.EMAIL_ADDRESS ?? null,
+        accepted7d: mails.done + mails.empty + mails.queued,
+        rejected7d: mails.rejected,
+        failed7d: mails.failed,
+      },
+    }
+  })
+
+  // "Erneut versuchen" for failed jobs: one by id or all.
+  app.post('/api/admin/jobs/retry', async (request, reply) => {
+    const body = parseBody(z.object({ id: z.string().max(40).optional() }), request.body ?? {}, reply)
+    if (!body) return reply
+    return { retried: ctx.queue.retryFailed(body.id) }
+  })
+
+  // Backup now (e.g. before a risky change); same file as the daily one, replaced if it exists.
+  app.post('/api/admin/backup', async () => {
+    const file = await dailyBackup(ctx.database.sqlite, ctx.config.DATA_DIR, new Date(), true)
+    return { file: file ? path.basename(file) : null, lastBackup: lastBackup(ctx.config.DATA_DIR) }
   })
 }

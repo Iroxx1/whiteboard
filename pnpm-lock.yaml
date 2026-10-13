@@ -163,7 +163,7 @@ settings:
   excludeLinksFromLockfile: false
 
 patchedDependencies:
-  '@excalidraw/excalidraw@0.18.1': 664e63f920fb5569942aa2da8720e11122e2db3f5da640521c8a97a2abb20c2f
+  '@excalidraw/excalidraw@0.18.1': 6744e75b5820aab3492ac1264e7cf369f2e7d898a304fda123e2d389c0ffb63c
 
 importers:
 
@@ -280,7 +280,7 @@ importers:
     dependencies:
       '@excalidraw/excalidraw':
         specifier: 0.18.1
-        version: 0.18.1(patch_hash=664e63f920fb5569942aa2da8720e11122e2db3f5da640521c8a97a2abb20c2f)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        version: 0.18.1(patch_hash=6744e75b5820aab3492ac1264e7cf369f2e7d898a304fda123e2d389c0ffb63c)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@radix-ui/react-dialog':
         specifier: 1.2.0
         version: 1.2.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -6657,7 +6657,7 @@ snapshots:
   '@esbuild/win32-x64@0.28.2':
     optional: true
 
-  '@excalidraw/excalidraw@0.18.1(patch_hash=664e63f920fb5569942aa2da8720e11122e2db3f5da640521c8a97a2abb20c2f)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
+  '@excalidraw/excalidraw@0.18.1(patch_hash=6744e75b5820aab3492ac1264e7cf369f2e7d898a304fda123e2d389c0ffb63c)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
       '@braintree/sanitize-url': 6.0.2
       '@excalidraw/laser-pointer': 1.3.1

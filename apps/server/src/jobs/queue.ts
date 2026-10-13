@@ -1,5 +1,5 @@
 import { ulid } from '@wb/shared'
-import { and, asc, desc, eq, inArray, lt, lte } from 'drizzle-orm'
+import { and, asc, count, desc, eq, inArray, lt, lte } from 'drizzle-orm'
 import type { FastifyBaseLogger as Logger } from 'fastify'
 import type { Db } from '../db/index.ts'
 import { jobs } from '../db/schema.ts'
@@ -165,6 +165,38 @@ export class JobQueue {
       .delete(jobs)
       .where(and(inArray(jobs.status, ['done', 'failed']), lt(jobs.finishedAt, now - KEEP_FINISHED_MS)))
       .run()
+  }
+
+  /** Counts per status and the latest failures for the admin system page (PLAN.md 7.7). */
+  stats() {
+    const counts = { queued: 0, running: 0, failed: 0 }
+    for (const row of this.db
+      .select({ status: jobs.status, n: count() })
+      .from(jobs)
+      .where(inArray(jobs.status, ['queued', 'running', 'failed']))
+      .groupBy(jobs.status)
+      .all()) {
+      counts[row.status as keyof typeof counts] = row.n
+    }
+    const failures = this.db
+      .select({ id: jobs.id, type: jobs.type, lastError: jobs.lastError, finishedAt: jobs.finishedAt })
+      .from(jobs)
+      .where(eq(jobs.status, 'failed'))
+      .orderBy(desc(jobs.finishedAt))
+      .limit(20)
+      .all()
+    return { ...counts, failures }
+  }
+
+  /** "Erneut versuchen": failed jobs (one or all) start again with fresh attempts. */
+  retryFailed(id?: string): number {
+    const result = this.db
+      .update(jobs)
+      .set({ status: 'queued', attempts: 0, runAfter: Date.now(), finishedAt: null })
+      .where(id ? and(eq(jobs.id, id), eq(jobs.status, 'failed')) : eq(jobs.status, 'failed'))
+      .run()
+    this.kick()
+    return result.changes
   }
 
   /** Waits until no job is queued or running (tests). */

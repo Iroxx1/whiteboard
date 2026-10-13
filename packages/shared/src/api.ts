@@ -100,3 +100,23 @@ export type SenderAddress = { email: string; createdAt: number }
 
 /** Inbox address and whether the e-mail channel is configured. */
 export type EmailSettings = { enabled: boolean; address: string | null; senders: SenderAddress[] }
+
+/** Admin page "System" (PLAN.md 7.7). */
+export type SystemInfo = {
+  version: string
+  users: number
+  boards: number
+  items: number
+  dbBytes: number
+  filesBytes: number
+  storage: { freeBytes: number; totalBytes: number; freeShare: number; warning: boolean }
+  lastBackup: { file: string; at: number; bytes: number } | null
+  jobs: {
+    queued: number
+    running: number
+    failed: number
+    failures: { id: string; type: string; lastError: string | null; finishedAt: number | null }[]
+  }
+  telegram: { configured: boolean; connected: boolean; polling: boolean; username: string | null }
+  email: { configured: boolean; address: string | null; accepted7d: number; rejected7d: number; failed7d: number }
+}

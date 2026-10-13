@@ -14,6 +14,7 @@ import type {
   Me,
   OneTimeLink,
   Role,
+  SearchResult,
   SenderAddress,
   SessionInfo,
   SnapshotInfo,
@@ -84,6 +85,7 @@ export const api = {
   updateUser: (id: string, body: { disabled?: boolean; role?: Role }) =>
     request<AdminUser>('PATCH', `/api/admin/users/${enc(id)}`, body),
   resetLink: (id: string) => request<OneTimeLink>('POST', `/api/admin/users/${enc(id)}/reset-link`),
+  search: (q: string) => get<SearchResult>(`/api/search?q=${enc(q)}`),
   system: () => get<SystemInfo>('/api/admin/system'),
   retryJobs: (id?: string) => request<{ retried: number }>('POST', '/api/admin/jobs/retry', id ? { id } : {}),
   backupNow: () => request<{ file: string | null }>('POST', '/api/admin/backup'),

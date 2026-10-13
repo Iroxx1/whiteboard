@@ -89,7 +89,11 @@ export function purgeTrash(db: Db, now = Date.now()): number {
 /** Boards, trash and history (PLAN.md 4.6, 6). Everyone can see and edit every board. */
 export function registerBoardRoutes(app: FastifyInstance, ctx: AppContext) {
   const { db } = ctx.database
-  const changed = (boardId: string, extra: object = {}) => ctx.hub.toAll(EVENTS.boardsChanged, { boardId, ...extra })
+  const changed = (boardId: string, extra: object = {}) => {
+    // Name and hashtag are searchable; deleted boards are filtered out when searching (PLAN.md 5.9).
+    ctx.search.indexBoard(boardId)
+    ctx.hub.toAll(EVENTS.boardsChanged, { boardId, ...extra })
+  }
 
   app.get<{ Querystring: { trash?: string } }>('/api/boards', async (request, reply) => {
     noStore(reply)

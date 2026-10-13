@@ -203,9 +203,19 @@ export function ItemDetails({ itemId, onClose }: { itemId: string; onClose?: () 
               {copied === text.kind ? de.common.copied : de.details.copy}
             </Button>
           </div>
-          <pre className="max-h-60 overflow-auto rounded-lg bg-[var(--wb-hover)] p-2 text-xs whitespace-pre-wrap">
-            {text.text}
-          </pre>
+          {text.kind === 'article' ? (
+            // Reading text of a link: long, so collapsed (Phase 7).
+            <details className="rounded-lg bg-[var(--wb-hover)] p-2 text-sm">
+              <summary className="cursor-pointer text-xs text-[var(--wb-muted)]">
+                {de.details.articleSummary(text.text.length)}
+              </summary>
+              <div className="mt-2 max-h-96 overflow-auto leading-relaxed whitespace-pre-wrap">{text.text}</div>
+            </details>
+          ) : (
+            <pre className="max-h-60 overflow-auto rounded-lg bg-[var(--wb-hover)] p-2 text-xs whitespace-pre-wrap">
+              {text.text}
+            </pre>
+          )}
         </section>
       ))}
       <section className="flex flex-col gap-1 text-sm">

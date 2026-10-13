@@ -32,6 +32,8 @@ import { registerCspReportRoute } from './routes/cspReport.ts'
 import { registerHealthRoutes } from './routes/health.ts'
 import { registerManifestRoute } from './routes/manifest.ts'
 import { registerStatic } from './routes/static.ts'
+import { SearchIndex } from './search/index.ts'
+import { registerSearchRoutes } from './search/routes.ts'
 import { type TelegramOptions, TelegramService } from './telegram/bot.ts'
 import { registerTelegramRoutes } from './telegram/routes.ts'
 
@@ -100,6 +102,9 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
     options.queue,
   )
   items.attachQueue(queue)
+  const search = new SearchIndex(database.db, database.sqlite)
+  items.onIndex = (itemId) => search.indexItem(itemId)
+  items.onRemoved = (itemId) => search.removeItem(itemId)
   email.attachQueue(queue)
   const telegram = new TelegramService(database.db, items, app.log, tmpDir, config.TELEGRAM_BOT_TOKEN, options.telegram)
   const ctx: AppContext = {
@@ -114,8 +119,12 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
     queue,
     telegram,
     email,
+    search,
   }
-  ctx.rooms.onSaved = (boardId, elements) => items.reconcileBoard(boardId, elements)
+  ctx.rooms.onSaved = (boardId, elements) => {
+    items.reconcileBoard(boardId, elements)
+    search.indexBoardTexts(boardId, elements)
+  }
 
   await app.register(fastifyCookie)
   await app.register(fastifyMultipart, {
@@ -138,6 +147,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
   registerShareRoutes(app, ctx)
   registerTelegramRoutes(app, ctx)
   registerEmailRoutes(app, ctx)
+  registerSearchRoutes(app, ctx)
   // Tests feed updates through it.
   app.decorate('telegram', telegram)
   await registerStatic(app, config)
@@ -150,6 +160,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
       ctx.sessions.purgeExpired()
       const purged = purgeTrash(database.db)
       if (purged > 0) app.log.info({ purged }, 'boards removed from trash')
+      search.prune()
       const purgedItems = items.purgeTrash()
       if (purgedItems > 0) app.log.info({ purged: purgedItems }, 'items removed from trash')
       queue.purgeFinished()
@@ -176,6 +187,11 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
   app.addHook('onReady', async () => {
     maintenance()
     void backup()
+    // First start with the search index (Phase 7): build it and fetch reading texts of old links.
+    if (search.isEmpty()) {
+      search.rebuild()
+      for (const id of items.linksWithoutArticle()) queue.enqueue('extract_article', { itemId: id })
+    }
     ctx.setup.init()
     queue.start()
     telegram.start()

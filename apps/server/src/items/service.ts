@@ -64,6 +64,23 @@ export class ItemService {
     this.queue = queue
   }
 
+  /** Follow-up jobs of processors (e.g. extract_article after unfurl_link). */
+  queueJob(type: string, payload: Record<string, unknown>) {
+    this.queue?.enqueue(type, payload)
+  }
+
+  /** Search index (Phase 7): told about every change of an item; removed items are dropped. */
+  onIndex: ((itemId: string) => void) | undefined
+  onRemoved: ((itemId: string) => void) | undefined
+
+  private reindex(itemId: string) {
+    try {
+      this.onIndex?.(itemId)
+    } catch (error) {
+      this.log.error({ err: error, itemId }, 'search index update failed')
+    }
+  }
+
   // --- events -------------------------------------------------------------------------------
 
   inboxChanged() {
@@ -71,6 +88,7 @@ export class ItemService {
   }
 
   itemUpdated(itemId: string) {
+    this.reindex(itemId)
     this.hub.toAll(EVENTS.itemUpdated, { itemId })
   }
 
@@ -180,6 +198,7 @@ export class ItemService {
     }
 
     for (const job of jobsToQueue) this.queue?.enqueue(job.type, { itemId: job.itemId })
+    for (const id of created) this.reindex(id)
     this.inboxChanged()
     for (const id of duplicateIds) this.itemUpdated(id)
     if (targetBoardId) this.announcePending(targetBoardId, [...created, ...duplicateIds])
@@ -387,6 +406,17 @@ export class ItemService {
       .all()
       .map((row) => ({ boardId: row.boardId, boardName: row.boardName, deleted: row.deletedAt !== null }))
     return { ...item, texts, placements }
+  }
+
+  /** Link items without reading text (backfill when the search starts, Phase 7). */
+  linksWithoutArticle(): string[] {
+    return this.db
+      .select({ id: items.id })
+      .from(items)
+      .leftJoin(itemTexts, and(eq(itemTexts.itemId, items.id), eq(itemTexts.kind, 'article')))
+      .where(and(eq(items.kind, 'link'), ne(items.status, 'trashed'), isNull(itemTexts.itemId)))
+      .all()
+      .map((row) => row.id)
   }
 
   /** Items with a target board that still wait in the inbox (for board:join, PLAN.md 5.4). */
@@ -669,12 +699,13 @@ export class ItemService {
     this.inboxChanged()
   }
 
-  setText(itemId: string, kind: 'pdf' | 'doc', text: string) {
+  setText(itemId: string, kind: 'pdf' | 'doc' | 'article', text: string) {
     this.db
       .insert(itemTexts)
       .values({ itemId, kind, text, createdAt: Date.now() })
       .onConflictDoUpdate({ target: [itemTexts.itemId, itemTexts.kind], set: { text, createdAt: Date.now() } })
       .run()
+    this.reindex(itemId)
   }
 
   /** Deletes items that have been in the trash for 30 days, including their files. */
@@ -698,6 +729,7 @@ export class ItemService {
       if (dir) fs.rmSync(path.join(this.filesDir, this.assetDir(id, dir.createdAt)), { recursive: true, force: true })
       this.db.delete(assets).where(eq(assets.itemId, id)).run()
       this.db.delete(items).where(eq(items.id, id)).run()
+      this.onRemoved?.(id)
     }
     return old.length
   }

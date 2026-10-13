@@ -202,8 +202,10 @@ export const de = {
     openOriginal: 'Original öffnen',
     openLink: 'Link öffnen',
     download: 'Herunterladen',
-    texts: { article: 'Seitentext', pdf: 'PDF-Text', ocr: 'Erkannter Text', transcript: 'Transkript', doc: 'Text' },
+    texts: { article: 'Lesetext', pdf: 'PDF-Text', ocr: 'Erkannter Text', transcript: 'Transkript', doc: 'Text' },
     copy: 'Kopieren',
+    articleSummary: (length: number) =>
+      `Text der Seite anzeigen (etwa ${Math.max(1, Math.round(length / 1500))} Min. Lesezeit)`,
     boards: 'Liegt auf',
     noBoards: 'Noch auf keinem Board.',
     putOnBoard: 'Auf Board legen',
@@ -227,6 +229,15 @@ export const de = {
     restored: 'Version wiederhergestellt.',
     elements: (count: number) => `${count} ${count === 1 ? 'Element' : 'Elemente'}`,
     reasons: { auto: 'automatisch', manual: 'manuell', before_restore: 'vor Wiederherstellung' },
+  },
+  search: {
+    title: 'Suche',
+    buttonTitle: 'Suche (Strg+K)',
+    placeholder: 'Wörter oder Wortteile …',
+    hint: 'Sucht in Einträgen (auch Seiten-, PDF- und Lesetexten), Boardnamen und allen Texten auf Boards.',
+    nothing: 'Nichts gefunden.',
+    groups: { items: 'Inbox & Archiv', boards: 'Boards', boardTexts: 'Auf Boards' },
+    status: { inbox: 'Inbox', placed: 'auf Board', archived: 'Archiv', trashed: 'Papierkorb' },
   },
   settings: {
     title: 'Einstellungen',

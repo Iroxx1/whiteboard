@@ -13,7 +13,7 @@ Wird vom umsetzenden Modell nach jeder Phase aktualisiert. Phasen und Abnahmekri
 | 4 | Telegram-Bot | ✅ fertig (13.10.2026), auf CT 118 ausgerollt (`sha-d37a228`, Bot @familie_whiteboard_bot) |
 | 5 | E-Mail über Cloudflare | ✅ fertig (13.10.2026), auf CT 118 ausgerollt (`sha-ae9c4f4`); Cloudflare-Einrichtung durch den Auftraggeber offen |
 | 6 | Produktivbetrieb und Härtung | ✅ fertig (13.10.2026), auf CT 118 ausgerollt (`sha-201c626`) |
-| 7 | Volltextsuche | offen |
+| 7 | Volltextsuche | ✅ fertig (13.10.2026), Ausrollen offen |
 | 8 | OCR | offen |
 | 9 | Sprachnachrichten → Text | offen |
 | 10 | Feinschliff (optional) | offen |
@@ -21,6 +21,16 @@ Wird vom umsetzenden Modell nach jeder Phase aktualisiert. Phasen und Abnahmekri
 ## Offene Fragen an den Auftraggeber
 
 _(keine)_
+
+## Stand Phase 7 (13.10.2026)
+
+- **Index:** SQLite FTS5 `search_fts` mit Trigram-Tokenizer und `remove_diacritics` (Migration 0005). Findet Wortteile („tür“ → „Haustür“), ignoriert Groß-/Kleinschreibung und Akzente („cafe“ → „Café“); „ss“ und „ß“ werden beide gesucht. Suchbegriffe unter 3 Zeichen: `LIKE` auf Titel und Boardnamen.
+- **Inhalt:** Einträge (alles außer Papierkorb): Titel, Notiz, URL, Seitenname, Beschreibung, Dateiname, PDF-/Dokument-/Lesetexte. Boards: Name und Hashtag. Auf Boards: jeder Text (Haftnotizen springen zur Notiz, nicht zum Text darin), Rahmen-Namen und die Titel der Karten.
+- **Pflege:** Die App aktualisiert den Index bei jeder Änderung (Eintrag angelegt/geändert/verarbeitet/gelöscht/wiederhergestellt, Board angelegt/umbenannt, jedes Speichern eines Boards). Gelöschte Boards und Papierkorb-Einträge filtert die Suche aus; nach dem endgültigen Löschen fliegen ihre Dokumente aus dem Index. Beim ersten Start mit Phase 7 baut die App den Index aus dem Bestand und holt Lesetexte vorhandener Links nach.
+- **Lesetext** (`extract_article`, Readability + linkedom): nach der Link-Vorschau als eigener Job, nicht für Videos, Musik, Instagram und Orte. In den Details als eingeklappter Abschnitt „Lesetext“.
+- **API:** `GET /api/search?q=` → `items`, `boards`, `boardTexts`, nach `bm25` sortiert (Titel 4-fach gewichtet), je Gruppe bis 20 Treffer, Ausschnitt mit markierten Treffern.
+- **Oberfläche:** Lupe oben (Seiten und Board) und Strg/Cmd+K; Gruppen „Inbox & Archiv“, „Boards“, „Auf Boards“; Pfeiltasten und Enter. Eintrag → Detailseite; Board-Text → Board öffnet sich, zoomt auf das Element und wählt es aus.
+- **Tests:** Abfrage-Aufbau, Ausschnitte, Board-Dokumente, Lesetext, Suche über die API (Artikel, Wortteile, Umlaute, ß/ss, Papierkorb, Board umbenennen/löschen, Haftnotiz per Echtzeit-Sync); E2E „Haftnotiz suchen und hinspringen“.
 
 ## Stand Phase 6 (13.10.2026)
 
@@ -166,6 +176,11 @@ _(keine)_
 | 13.10.2026 | Phase 6: Zusätzlich `/api/csp-report` (öffentlich, Ratenbegrenzung) und `'wasm-unsafe-eval'` sowie `worker-src blob:` für Excalidraws Export | CSP-Probleme werden im Log sichtbar |
 | 13.10.2026 | Phase 6: Excalidraw-Patch entfernt den Schrift-Ersatz von esm.sh | keine Anfragen an Dritte, keine CSP-Meldungen bei jedem Board-Aufruf |
 | 13.10.2026 | Phase 6: Seiten, die der Service Worker aus dem Cache liefert, haben die Header ihres Abrufs; CSP-Änderungen wirken nach dem nächsten App-Update („neu laden“) | Eigenschaft des Precache |
+| 13.10.2026 | Phase 7: Die Suche findet auch platzierte Einträge, nur der Papierkorb bleibt außen vor | Auftraggeber |
+| 13.10.2026 | Phase 7: Lesetext von Links eingeklappt in den Details | Auftraggeber |
+| 13.10.2026 | Phase 7: Trefferausschnitte baut der Server selbst (FTS5-`snippet()` markiert Trigram-Treffer unzuverlässig); Markierungen als Steuerzeichen, die Web-App macht daraus `<mark>` (kein HTML vom Server) | Test |
+| 13.10.2026 | Phase 7: Strg/Cmd+K öffnet überall die Suche, auch im Board; Excalidraws eigenes Strg+K (Link einfügen) gibt es dort nur noch über das Kontextmenü | PLAN.md 4.8 |
+| 13.10.2026 | Phase 7: Haftnotiz-Treffer springen zur Notiz (Container), nicht zum Textelement darin | sinnvolle Auswahl im Board |
 
 ## Manuelle Tests durch den Auftraggeber
 
@@ -244,3 +259,12 @@ _(keine)_
 - [ ] Optional: `https://securityheaders.com/?q=board.dittgen.uk` aufrufen
 - [ ] Optional: Uptime Kuma auf `https://board.dittgen.uk/healthz` zeigen lassen
 - [ ] GitHub: Dependabot-PRs kommen montags; zusammenführen, wenn CI grün ist (oder mir Bescheid geben)
+
+### Phase 7
+
+- [ ] Neues Image auf CT 118 (`update.sh`, Änderungsprotokoll); die App baut beim ersten Start den Index
+- [ ] Lupe oben bzw. Strg+K: nach einem Wort aus einem PDF, einem Zeitungsartikel (Link), einer Haftnotiz und einem Boardnamen suchen – alles gefunden?
+- [ ] Wortteil suchen (z. B. „schlauch“ für „Gartenschlauch“)
+- [ ] Treffer „Auf Boards“ anklicken: öffnet sich das Board an der richtigen Stelle, ist die Notiz ausgewählt?
+- [ ] Details eines Links: „Lesetext“ aufklappen
+- [ ] Am Handy: Lupe oben in der App

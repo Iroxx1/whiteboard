@@ -8,6 +8,7 @@ import type { EmailService } from './email/service.ts'
 import type { ItemService } from './items/service.ts'
 import type { JobQueue } from './jobs/queue.ts'
 import type { RealtimeHub } from './realtime/hub.ts'
+import type { SearchIndex } from './search/index.ts'
 import type { TelegramService } from './telegram/bot.ts'
 
 /** Shared services, created once in buildApp and handed to the route modules. */
@@ -23,4 +24,5 @@ export type AppContext = {
   queue: JobQueue
   telegram: TelegramService
   email: EmailService
+  search: SearchIndex
 }

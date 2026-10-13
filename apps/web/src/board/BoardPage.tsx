@@ -5,10 +5,11 @@ import type { AppState, BinaryFiles, ExcalidrawImperativeAPI } from '@excalidraw
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { type BoardDetail, type Item, itemIdFromLink, type Me } from '@wb/shared'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
 import { de } from '../i18n/de.ts'
 import { api } from '../lib/api.ts'
 import { FullPageMessage, useMe } from '../lib/auth.tsx'
+import { SearchButton } from '../search/SearchDialog.tsx'
 import { THEME_ORDER, useThemeSetting } from '../ui/ThemeToggle.tsx'
 import { BoardSync, type SyncStatus } from './BoardSync.ts'
 import { FileSync } from './FileSync.ts'
@@ -116,6 +117,32 @@ function Editor({ board, me }: { board: BoardDetail; me: Me }) {
   const placerRef = useRef<Placer | null>(null)
   const wrapperRef = useRef<HTMLDivElement>(null)
   const saveStyle = useMemo(() => createStyleSaver(me.id), [me.id])
+  const [params, setParams] = useSearchParams()
+  const focus = params.get('focus')
+
+  // Search hit on this board (PLAN.md 5.9): zoom to the element and select it, then drop ?focus.
+  useEffect(() => {
+    if (!excalidraw || !focus) return
+    let tries = 0
+    const timer = setInterval(() => {
+      const element = excalidraw.getSceneElements().find((entry) => entry.id === focus)
+      if (!element && ++tries < 20) return
+      clearInterval(timer)
+      if (element) {
+        excalidraw.scrollToContent(element, { fitToViewport: true, viewportZoomFactor: 0.5, animate: true })
+        excalidraw.updateScene({ appState: { selectedElementIds: { [element.id]: true } } })
+      }
+      setParams(
+        (current) => {
+          const next = new URLSearchParams(current)
+          next.delete('focus')
+          return next
+        },
+        { replace: true },
+      )
+    }, 150)
+    return () => clearInterval(timer)
+  }, [excalidraw, focus, setParams])
 
   // Only the first render matters; later changes arrive through the sync. The inbox sidebar
   // starts open and docked on desktops (decided 12.10.2026).
@@ -300,6 +327,7 @@ function Editor({ board, me }: { board: BoardDetail; me: Me }) {
             <span className="hidden max-w-[30vw] shrink-0 self-center truncate text-sm font-semibold sm:block">
               {board.name}
             </span>
+            <SearchButton className="self-center" />
             <Sidebar.Trigger name="inbox" title={de.inbox.toggle}>
               📥 <span className="hidden sm:inline">{de.inbox.toggle}</span>
               {inboxCount > 0 && (

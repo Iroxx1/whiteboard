@@ -4,6 +4,7 @@ import { NavLink } from 'react-router'
 import { de } from '../i18n/de.ts'
 import { api, formatBytes } from '../lib/api.ts'
 import { useLogout, useMe } from '../lib/auth.tsx'
+import { SearchButton } from '../search/SearchDialog.tsx'
 import { InstallHint } from './PwaBanners.tsx'
 import { ThemeToggle } from './ThemeToggle.tsx'
 
@@ -47,6 +48,7 @@ export function Layout({ children }: { children: ReactNode }) {
               </NavLink>
             )}
           </nav>
+          <SearchButton />
           <ThemeToggle />
           <button
             type="button"

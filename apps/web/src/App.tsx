@@ -9,6 +9,7 @@ import { DashboardPage, InboxPage } from './routes/DashboardPage.tsx'
 import { ItemPage } from './routes/ItemPage.tsx'
 import { SettingsPage } from './routes/SettingsPage.tsx'
 import { SharePage } from './routes/SharePage.tsx'
+import { SearchProvider } from './search/SearchDialog.tsx'
 import { UpdateBanner } from './ui/PwaBanners.tsx'
 
 // Excalidraw is large; load the editor route lazily (PLAN.md 5.13).
@@ -22,64 +23,66 @@ export function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/setup" element={<SetupPage />} />
-          <Route path="/invite/:token" element={<InvitePage />} />
-          <Route path="/reset/:token" element={<ResetPage />} />
-          <Route path="/share" element={<SharePage />} />
-          <Route
-            path="/"
-            element={
-              <RequireAuth>
-                <DashboardPage />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/b/:boardId"
-            element={
-              <RequireAuth>
-                <Suspense fallback={<FullPageMessage>{de.board.loading}</FullPageMessage>}>
-                  <BoardPage />
-                </Suspense>
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/inbox"
-            element={
-              <RequireAuth>
-                <InboxPage />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/i/:itemId"
-            element={
-              <RequireAuth>
-                <ItemPage />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/settings"
-            element={
-              <RequireAuth>
-                <SettingsPage />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/admin"
-            element={
-              <RequireAuth admin>
-                <AdminPage />
-              </RequireAuth>
-            }
-          />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+        <SearchProvider>
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/setup" element={<SetupPage />} />
+            <Route path="/invite/:token" element={<InvitePage />} />
+            <Route path="/reset/:token" element={<ResetPage />} />
+            <Route path="/share" element={<SharePage />} />
+            <Route
+              path="/"
+              element={
+                <RequireAuth>
+                  <DashboardPage />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/b/:boardId"
+              element={
+                <RequireAuth>
+                  <Suspense fallback={<FullPageMessage>{de.board.loading}</FullPageMessage>}>
+                    <BoardPage />
+                  </Suspense>
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/inbox"
+              element={
+                <RequireAuth>
+                  <InboxPage />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/i/:itemId"
+              element={
+                <RequireAuth>
+                  <ItemPage />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                <RequireAuth>
+                  <SettingsPage />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/admin"
+              element={
+                <RequireAuth admin>
+                  <AdminPage />
+                </RequireAuth>
+              }
+            />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </SearchProvider>
         <UpdateBanner />
       </BrowserRouter>
     </QueryClientProvider>

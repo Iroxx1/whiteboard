@@ -210,11 +210,8 @@ export class TelegramService {
     this.links = new TelegramLinks(db)
     this.albumDelayMs = options.albumDelayMs ?? 1500
     if (token) {
-      // Node's own fetch instead of grammY's node-fetch (see scripts/node-fetch-stub.cjs).
-      this.bot = new Bot(token, {
-        client: { fetch: globalThis.fetch as never },
-        ...(options.botInfo ? { botInfo: options.botInfo } : {}),
-      })
+      // grammY's own node-fetch: with Node's built-in fetch the API calls hang (seen on CT 118).
+      this.bot = new Bot(token, options.botInfo ? { botInfo: options.botInfo } : {})
       if (options.transformer) this.bot.api.config.use(options.transformer)
       this.registerHandlers(this.bot)
     }

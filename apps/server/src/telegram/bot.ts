@@ -244,7 +244,7 @@ export class TelegramService {
     if (!bot) return
     while (!this.stopped) {
       try {
-        await bot.init()
+        await bot.init(AbortSignal.timeout(30_000))
         break
       } catch (error) {
         if (error instanceof GrammyError && (error.error_code === 401 || error.error_code === 404)) {

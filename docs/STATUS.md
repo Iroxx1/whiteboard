@@ -12,7 +12,7 @@ Wird vom umsetzenden Modell nach jeder Phase aktualisiert. Phasen und Abnahmekri
 | 3 | PWA und Teilen-Menü | ✅ fertig (12.10.2026), auf CT 118 ausgerollt (`sha-9464792`) |
 | 4 | Telegram-Bot | ✅ fertig (13.10.2026), auf CT 118 ausgerollt (`sha-d37a228`, Bot @familie_whiteboard_bot) |
 | 5 | E-Mail über Cloudflare | ✅ fertig (13.10.2026), auf CT 118 ausgerollt (`sha-ae9c4f4`); Cloudflare-Einrichtung durch den Auftraggeber offen |
-| 6 | Produktivbetrieb und Härtung | ✅ fertig (13.10.2026), Ausrollen offen |
+| 6 | Produktivbetrieb und Härtung | ✅ fertig (13.10.2026), auf CT 118 ausgerollt (`sha-201c626`) |
 | 7 | Volltextsuche | offen |
 | 8 | OCR | offen |
 | 9 | Sprachnachrichten → Text | offen |
@@ -236,8 +236,8 @@ _(keine)_
 ### Phase 6
 
 - [x] Frische Installation und Wiederherstellung in CT 119 getestet (Claude)
-- [ ] CT 119 löschen (nach Zustimmung)
-- [ ] Neues Image auf CT 118, `update.sh`/`restore-db.sh` nach `/opt/whiteboard`, `unattended-upgrades` (`.env` gesichert, Änderungsprotokoll)
+- [x] CT 119 gelöscht (nach Zustimmung)
+- [x] Neues Image auf CT 118 (`sha-201c626` per `update.sh`), `update.sh`/`restore-db.sh` in `/opt/whiteboard`, `unattended-upgrades` war schon aktiv
 - [ ] Verwaltung → System ansehen: stimmen Speicher, letzte Sicherung, Telegram und E-Mail? „Jetzt sichern“ ausprobieren
 - [ ] Am nächsten Morgen: gibt es `data/backups/db-<Datum>.sqlite` von 03:30?
 - [ ] Board öffnen, Haftnotiz schreiben, Detailansicht eines YouTube-/Instagram-Eintrags: alles wie vorher? (`docker compose logs app | grep "csp violation"` sollte leer bleiben)

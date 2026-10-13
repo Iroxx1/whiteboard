@@ -11,7 +11,7 @@ Wird vom umsetzenden Modell nach jeder Phase aktualisiert. Phasen und Abnahmekri
 | 2 | Inbox, Verarbeitung und Karten | ✅ fertig (12.10.2026), auf CT 118 ausgerollt (`sha-6745b66`; Nachbesserung `sha-0cf5ebf`: Instagram-Embed, Neuladen nach Updates, Bibliothek ausgeblendet) |
 | 3 | PWA und Teilen-Menü | ✅ fertig (12.10.2026), auf CT 118 ausgerollt (`sha-9464792`) |
 | 4 | Telegram-Bot | ✅ fertig (13.10.2026), auf CT 118 ausgerollt (`sha-d37a228`, Bot @familie_whiteboard_bot) |
-| 5 | E-Mail über Cloudflare | ✅ fertig (13.10.2026), Ausrollen offen |
+| 5 | E-Mail über Cloudflare | ✅ fertig (13.10.2026), auf CT 118 ausgerollt (`sha-ae9c4f4`); Cloudflare-Einrichtung durch den Auftraggeber offen |
 | 6 | Produktivbetrieb und Härtung | offen |
 | 7 | Volltextsuche | offen |
 | 8 | OCR | offen |
@@ -200,7 +200,7 @@ _(keine)_
 
 ### Phase 5
 
-- [ ] Neues Image auf CT 118, Token und Adresse in der `.env` (`.env` gesichert, Änderungsprotokoll)
+- [x] Neues Image auf CT 118 (`sha-ae9c4f4`), Token und Adresse in der `.env` (`.env` gesichert, Änderungsprotokoll)
 - [ ] Cloudflare: Email Routing aktivieren, Gmail-Adresse bestätigen, Worker einfügen + Variablen, Regel `board@dittgen.uk` → Worker (`docs/SETUP.md` Schritt 9)
 - [ ] App: Einstellungen → „E-Mail“ → eigene Gmail-Adresse eintragen
 - [ ] Chrome am Handy → Teilen → Gmail → an `board@dittgen.uk`: Link-Karte mit Seitentitel?

@@ -91,7 +91,12 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
     database.db,
     app.log,
     {
-      ...processorJobs({ items, tmpDir, ...(options.fetchOptions ? { fetchOptions: options.fetchOptions } : {}) }),
+      ...processorJobs({
+        items,
+        tmpDir,
+        ocrLangs: config.OCR_ENABLED ? config.OCR_LANGS : null,
+        ...(options.fetchOptions ? { fetchOptions: options.fetchOptions } : {}),
+      }),
       ingest_email: {
         concurrency: 1,
         heavy: false,
@@ -191,6 +196,13 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
     if (search.isEmpty()) {
       search.rebuild()
       for (const id of items.linksWithoutArticle()) queue.enqueue('extract_article', { itemId: id })
+    }
+    // Text recognition for images and PDFs from before Phase 8 (once; ocrDone marks them).
+    if (config.OCR_ENABLED) {
+      const pending = items.withoutOcr()
+      for (const { id, kind } of pending)
+        queue.enqueue(kind === 'pdf' ? 'ocr_pdf' : 'ocr_image', { itemId: id }, { priority: -1 })
+      if (pending.length > 0) app.log.info({ count: pending.length }, 'text recognition queued for existing items')
     }
     ctx.setup.init()
     queue.start()

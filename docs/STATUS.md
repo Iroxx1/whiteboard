@@ -14,13 +14,24 @@ Wird vom umsetzenden Modell nach jeder Phase aktualisiert. Phasen und Abnahmekri
 | 5 | E-Mail über Cloudflare | ✅ fertig (13.10.2026), auf CT 118 ausgerollt (`sha-ae9c4f4`); Cloudflare-Einrichtung durch den Auftraggeber offen |
 | 6 | Produktivbetrieb und Härtung | ✅ fertig (13.10.2026), auf CT 118 ausgerollt (`sha-201c626`) |
 | 7 | Volltextsuche | ✅ fertig (13.10.2026), auf CT 118 ausgerollt (`sha-ebc9e5c`, 14.10.2026) |
-| 8 | OCR | offen |
+| 8 | OCR | ✅ fertig (14.10.2026), Ausrollen offen |
 | 9 | Sprachnachrichten → Text | offen |
 | 10 | Feinschliff (optional) | offen |
 
 ## Offene Fragen an den Auftraggeber
 
 _(keine)_
+
+## Stand Phase 8 (14.10.2026)
+
+- **Tesseract** (`tesseract-ocr` + `deu` + `eng`) im App-Image; Schalter `OCR_ENABLED` (Standard aus, `.env.example`: an) und `OCR_LANGS=deu+eng`.
+- **`ocr_image`:** nach der normalen Bildverarbeitung als eigener Job (die Karte ist sofort fertig, der Text kommt nach). HEIC → JPEG, EXIF-Drehung, auf 2500 px verkleinert, `tesseract … --psm 3` mit TSV-Ausgabe, 120 s Zeitlimit.
+- **`ocr_pdf`:** nur bei Scans (weniger als 50 Zeichen eingebetteter Text pro Seite), erste 10 Seiten mit 150 dpi (Graustufen), Seite für Seite.
+- **Kein Zeichenmüll:** Ergebnis nur mit mindestens 20 Buchstaben/Ziffern **und** einer mittleren Wort-Konfidenz von mindestens 55 (Fotos ohne Schrift ergeben sonst zufällige Zeichen).
+- **Rechenlast:** OCR-Jobs zählen als „schwer“ (nie zwei gleichzeitig, nie parallel zu Bild-/PDF-/Video-Verarbeitung), Tesseract mit einem Thread (`OMP_THREAD_LIMIT=1`) und `nice 10`.
+- **Ergebnis:** `item_texts(kind='ocr')` → Detailansicht „Erkannter Text“ mit Kopieren-Knopf, Volltextsuche. `meta.ocrDone` merkt, dass die Erkennung lief (auch ohne Ergebnis oder nach Fehlschlag).
+- **Bestand:** Beim Start reiht die App Bilder und PDFs ohne `ocrDone` mit niedriger Priorität ein (einmalig).
+- **Tests:** TSV-Auswertung und Rauschfilter; mit echtem Tesseract (in CI): Screenshot-Text erkannt und per Suche gefunden, Foto ohne Schrift ohne Text, gescanntes PDF erkannt, PDF mit Textebene ohne OCR.
 
 ## Stand Phase 7 (13.10.2026)
 
@@ -181,6 +192,10 @@ _(keine)_
 | 13.10.2026 | Phase 7: Trefferausschnitte baut der Server selbst (FTS5-`snippet()` markiert Trigram-Treffer unzuverlässig); Markierungen als Steuerzeichen, die Web-App macht daraus `<mark>` (kein HTML vom Server) | Test |
 | 13.10.2026 | Phase 7: Strg/Cmd+K öffnet überall die Suche, auch im Board; Excalidraws eigenes Strg+K (Link einfügen) gibt es dort nur noch über das Kontextmenü | PLAN.md 4.8 |
 | 13.10.2026 | Phase 7: Haftnotiz-Treffer springen zur Notiz (Container), nicht zum Textelement darin | sinnvolle Auswahl im Board |
+| 14.10.2026 | Phase 8: Vorhandene Bilder und PDFs einmalig nachträglich erkennen | Auftraggeber |
+| 14.10.2026 | Phase 8: Keine OCR für Bilder, die direkt aufs Board gezogen wurden, nur für Einträge | Auftraggeber (wie Plan) |
+| 14.10.2026 | Phase 8: Zusätzlicher Konfidenz-Filter (Mittelwert ≥ 55) neben „mindestens 20 Zeichen“ | Fotos ohne Schrift ergäben sonst Zeichenmüll in Details und Suche |
+| 14.10.2026 | Phase 8: OCR als eigener Job nach `process_image`/`process_pdf`, Tesseract mit einem Thread | Karte sofort fertig, Oberfläche bleibt flüssig (Abnahmekriterium) |
 
 ## Manuelle Tests durch den Auftraggeber
 
@@ -268,3 +283,12 @@ _(keine)_
 - [ ] Treffer „Auf Boards“ anklicken: öffnet sich das Board an der richtigen Stelle, ist die Notiz ausgewählt?
 - [ ] Details eines Links: „Lesetext“ aufklappen
 - [ ] Am Handy: Lupe oben in der App
+
+### Phase 8
+
+- [ ] Neues Image auf CT 118, `OCR_ENABLED=true` in der `.env` (`.env` gesichert, Änderungsprotokoll); vorhandene Bilder/PDFs werden im Hintergrund erkannt
+- [ ] Screenshot mit Text teilen: steht nach etwa einer Minute „Erkannter Text“ in den Details, findet die Suche ein Wort daraus?
+- [ ] Foto eines Dokuments (z. B. Rechnung, Schild) teilen
+- [ ] Gescanntes PDF (z. B. aus Genius Scan) teilen: erkannter Text da?
+- [ ] Ein Urlaubsfoto ohne Schrift: es sollte **kein** „Erkannter Text“ auftauchen
+- [ ] Während der Erkennung im Board arbeiten: bleibt alles flüssig?

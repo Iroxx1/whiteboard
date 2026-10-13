@@ -24,9 +24,10 @@ RUN pnpm --filter @wb/server deploy --prod /out \
   && rm -rf ./better-sqlite3@*/node_modules/better-sqlite3/deps ./better-sqlite3@*/node_modules/better-sqlite3/src
 
 FROM node:${NODE_VERSION}-trixie-slim AS runtime
-# ffmpeg/ffprobe (audio, video) and poppler (PDF) since Phase 2; tesseract follows with Phase 8.
+# ffmpeg/ffprobe (audio, video) and poppler (PDF) since Phase 2; tesseract (OCR, German + English) since Phase 8.
 RUN apt-get update \
   && apt-get install -y --no-install-recommends tini ca-certificates ffmpeg poppler-utils \
+     tesseract-ocr tesseract-ocr-deu tesseract-ocr-eng \
   && rm -rf /var/lib/apt/lists/*
 
 ARG APP_VERSION=dev

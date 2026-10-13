@@ -22,7 +22,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       # Media tools for the processor tests (same as in the runtime image).
-      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg poppler-utils
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg poppler-utils tesseract-ocr tesseract-ocr-deu tesseract-ocr-eng
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test

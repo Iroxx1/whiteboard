@@ -4,12 +4,30 @@ import type { SafeFetchOptions } from '../lib/safeFetch.ts'
 import { extractArticle } from './article.ts'
 import { unfurlLink } from './link.ts'
 import { processAudio, processDocument, processImage, processPdf, processVideo } from './media.ts'
+import { ocrImage, ocrPdf } from './ocr.ts'
 
-export type ProcessorOptions = { items: ItemService; tmpDir: string; fetchOptions?: Partial<SafeFetchOptions> }
+export type ProcessorOptions = {
+  items: ItemService
+  tmpDir: string
+  fetchOptions?: Partial<SafeFetchOptions>
+  /** Text recognition (PLAN.md 5.10); null = off. */
+  ocrLangs?: string | null
+}
 
 /** Job types with their limits (PLAN.md 5.5 table). */
 export function processorJobs(options: ProcessorOptions): Record<string, JobDefinition> {
   const { items } = options
+  const ocr = options.ocrLangs ? { items, tmpDir: options.tmpDir, langs: options.ocrLangs } : null
+  // One OCR at a time, counted as heavy; a failed recognition only leaves the text out.
+  const ocrJob = (run: (itemId: string) => Promise<void>): JobDefinition => ({
+    concurrency: 1,
+    heavy: true,
+    handler: async (payload) => {
+      const itemId = String(payload.itemId)
+      if (items.row(itemId)) await run(itemId)
+    },
+    onFailed: (payload) => items.patchMeta(String(payload.itemId), { ocrDone: true }),
+  })
   const linkContext = { items, ...(options.fetchOptions ? { fetchOptions: options.fetchOptions } : {}) }
   const itemJob = (run: (itemId: string) => Promise<void>, concurrency: number, heavy: boolean): JobDefinition => ({
     concurrency,
@@ -40,8 +58,33 @@ export function processorJobs(options: ProcessorOptions): Record<string, JobDefi
         if (items.row(itemId)) await extractArticle(linkContext, itemId)
       },
     },
-    process_image: itemJob((id) => processImage(options, id), 1, true),
-    process_pdf: itemJob((id) => processPdf(options, id), 1, true),
+    process_image: itemJob(
+      async (id) => {
+        await processImage(options, id)
+        if (ocr) items.queueJob('ocr_image', { itemId: id })
+      },
+      1,
+      true,
+    ),
+    process_pdf: itemJob(
+      async (id) => {
+        await processPdf(options, id)
+        if (ocr) items.queueJob('ocr_pdf', { itemId: id })
+      },
+      1,
+      true,
+    ),
+    // OCR after the normal processing: the card is ready first, the text follows (PLAN.md 5.10).
+    ocr_image: ocrJob(async (id) => {
+      if (ocr) await ocrImage(ocr, id)
+    }),
+    ocr_pdf: ocrJob(async (id) => {
+      const detail = items.detail(id)
+      if (ocr && detail) {
+        const text = detail.texts.find((entry) => entry.kind === 'pdf')?.text ?? ''
+        await ocrPdf(ocr, id, text, detail.meta.pageCount ?? 1)
+      }
+    }),
     process_audio: itemJob((id) => processAudio(options, id), 1, false),
     process_video: itemJob((id) => processVideo(options, id), 1, true),
     process_document: itemJob((id) => processDocument(options, id), 1, false),

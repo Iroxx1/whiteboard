@@ -30,6 +30,8 @@ export type ItemMeta = {
   width?: number
   height?: number
   textPreview?: string
+  /** Text recognition ran (with or without result), so it is not repeated (Phase 8). */
+  ocrDone?: boolean
 }
 
 export type Item = {

@@ -28,10 +28,22 @@ const schema = z.object({
   WEB_DIST: z.string().default(path.resolve(here, '../../web/dist')),
   MIGRATIONS_DIR: z.string().default(path.resolve(here, '../drizzle')),
   APP_VERSION: z.preprocess(emptyToUndefined, z.string().default('dev')),
-  // Bearer token of the Cloudflare email worker (at least 32 characters); empty = e-mail off (PLAN.md 5.8).
   // Inbox address shown in the settings, e.g. board@example.de.
   EMAIL_ADDRESS: z.preprocess(emptyToUndefined, z.email().optional()),
+  // Bearer token of the Cloudflare email worker (at least 32 characters); empty = e-mail off (PLAN.md 5.8).
   EMAIL_INGEST_TOKEN: z.preprocess(emptyToUndefined, z.string().min(32).optional()),
+  // Text recognition in images and scanned PDFs (PLAN.md 5.10).
+  OCR_ENABLED: z
+    .enum(['true', 'false', '1', '0', ''])
+    .default('false')
+    .transform((value) => value === 'true' || value === '1'),
+  OCR_LANGS: z.preprocess(
+    emptyToUndefined,
+    z
+      .string()
+      .regex(/^[a-z_]+(\+[a-z_]+)*$/)
+      .default('deu+eng'),
+  ),
   // Token from @BotFather; empty = Telegram bot off (PLAN.md 5.7).
   TELEGRAM_BOT_TOKEN: z.preprocess(
     emptyToUndefined,

@@ -64,6 +64,28 @@ export class ItemService {
     this.queue = queue
   }
 
+  /** Merges metadata without events (bookkeeping such as ocrDone). */
+  patchMeta(itemId: string, meta: ItemMeta) {
+    const current = this.row(itemId)
+    if (!current) return
+    this.db
+      .update(items)
+      .set({ metaJson: JSON.stringify({ ...(JSON.parse(current.metaJson) as ItemMeta), ...meta }) })
+      .where(eq(items.id, itemId))
+      .run()
+  }
+
+  /** Image and PDF items whose text recognition has not run yet (backfill, Phase 8). */
+  withoutOcr(): { id: string; kind: ItemKind }[] {
+    return this.db
+      .select({ id: items.id, kind: items.kind, metaJson: items.metaJson })
+      .from(items)
+      .where(and(inArray(items.kind, ['image', 'pdf']), ne(items.status, 'trashed'), eq(items.processing, 'ready')))
+      .all()
+      .filter((row) => !(JSON.parse(row.metaJson) as ItemMeta).ocrDone)
+      .map((row) => ({ id: row.id, kind: row.kind }))
+  }
+
   /** Follow-up jobs of processors (e.g. extract_article after unfurl_link). */
   queueJob(type: string, payload: Record<string, unknown>) {
     this.queue?.enqueue(type, payload)
@@ -699,7 +721,7 @@ export class ItemService {
     this.inboxChanged()
   }
 
-  setText(itemId: string, kind: 'pdf' | 'doc' | 'article', text: string) {
+  setText(itemId: string, kind: 'pdf' | 'doc' | 'article' | 'ocr', text: string) {
     this.db
       .insert(itemTexts)
       .values({ itemId, kind, text, createdAt: Date.now() })

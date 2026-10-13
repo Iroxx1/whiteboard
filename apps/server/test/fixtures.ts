@@ -80,3 +80,50 @@ export function multipart(fields: Record<string, string>, files: { name: string;
   parts.push(Buffer.from(`--${boundary}--\r\n`))
   return { payload: Buffer.concat(parts), contentType: `multipart/form-data; boundary=${boundary}` }
 }
+
+/** Screenshot-like PNG with dark text on white (for OCR). */
+export async function textImage(lines: string[]): Promise<Buffer> {
+  const rows = lines
+    .map(
+      (line, index) =>
+        `<text x="40" y="${90 + index * 70}" font-family="DejaVu Sans, Arial, sans-serif" font-size="48" fill="#111">${line}</text>`,
+    )
+    .join('')
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="${120 + lines.length * 70}"><rect width="100%" height="100%" fill="#fff"/>${rows}</svg>`
+  return sharp(Buffer.from(svg)).png().toBuffer()
+}
+
+/** One-page PDF that only contains a JPEG (like a scan, no text layer). */
+export function scannedPdf(jpeg: Buffer, width: number, height: number): Buffer {
+  const content = `q ${width} 0 0 ${height} 0 0 cm /Im1 Do Q`
+  const parts: (string | Buffer)[] = []
+  const offsets: number[] = []
+  let length = 0
+  const add = (chunk: string | Buffer) => {
+    parts.push(chunk)
+    length += typeof chunk === 'string' ? Buffer.byteLength(chunk, 'latin1') : chunk.length
+  }
+  add('%PDF-1.4\n')
+  const object = (index: number, body: (string | Buffer)[]) => {
+    offsets[index] = length
+    add(`${index} 0 obj\n`)
+    for (const chunk of body) add(chunk)
+    add('\nendobj\n')
+  }
+  object(1, ['<< /Type /Catalog /Pages 2 0 R >>'])
+  object(2, ['<< /Type /Pages /Kids [3 0 R] /Count 1 >>'])
+  object(3, [
+    `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${width} ${height}] /Contents 4 0 R /Resources << /XObject << /Im1 5 0 R >> >> >>`,
+  ])
+  object(4, [`<< /Length ${content.length} >>\nstream\n${content}\nendstream`])
+  object(5, [
+    `<< /Type /XObject /Subtype /Image /Width ${width} /Height ${height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpeg.length} >>\nstream\n`,
+    jpeg,
+    '\nendstream',
+  ])
+  const xref = length
+  add(`xref\n0 6\n0000000000 65535 f \n`)
+  for (let index = 1; index <= 5; index++) add(`${String(offsets[index]).padStart(10, '0')} 00000 n \n`)
+  add(`trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`)
+  return Buffer.concat(parts.map((chunk) => (typeof chunk === 'string' ? Buffer.from(chunk, 'latin1') : chunk)))
+}

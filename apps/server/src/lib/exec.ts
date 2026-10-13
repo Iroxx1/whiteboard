@@ -1,6 +1,6 @@
 import { execFile } from 'node:child_process'
 
-export type ToolOptions = { timeoutMs: number; maxBuffer?: number }
+export type ToolOptions = { timeoutMs: number; maxBuffer?: number; env?: Record<string, string> }
 
 /**
  * Runs an external tool (ffmpeg, poppler …) as a child process with a timeout; on Linux with
@@ -18,6 +18,7 @@ export function runTool(command: string, args: string[], options: ToolOptions): 
         killSignal: 'SIGKILL',
         maxBuffer: options.maxBuffer ?? 16 * 1024 * 1024,
         windowsHide: true,
+        ...(options.env ? { env: { ...process.env, ...options.env } } : {}),
       },
       (error, stdout, stderr) => {
         if (error) {

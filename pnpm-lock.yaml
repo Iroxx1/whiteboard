@@ -173,8 +173,8 @@ importers:
         specifier: 2.5.15
         version: 2.5.15
       '@playwright/test':
-        specifier: 1.63.0
-        version: 1.63.0
+        specifier: 1.64.0
+        version: 1.64.0
       '@types/node':
         specifier: 24.19.2
         version: 24.19.2
@@ -209,8 +209,8 @@ importers:
         specifier: 1.2.0
         version: 1.2.0
       drizzle-orm:
-        specifier: 0.45.3
-        version: 0.45.3(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3)
+        specifier: 0.45.4
+        version: 0.45.4(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3)
       fastify:
         specifier: 5.12.5
         version: 5.12.5
@@ -1825,8 +1825,8 @@ packages:
   '@pinojs/redact@0.4.0':
     resolution: {integrity: sha512-k2ENnmBugE/rzQfEcdWHcCY+/FM3VLzH9cYEsbdsoqrvzAKRhUZeRNhAZvB8OitQJ1TBed3yqWtdjzS6wJKBwg==}
 
-  '@playwright/test@1.63.0':
-    resolution: {integrity: sha512-oxMK4vllB9RK5NQ2l1pq1IfOf2AvnEuj/vYGDj0H2nMtmtZpKtCwt/l00GEO6xjGfpBNAvjovvYdCm50dRQkpQ==}
+  '@playwright/test@1.64.0':
+    resolution: {integrity: sha512-oTN9FNYuN6bqQMwiho6jJKLCG2/QOYCixGXuCjRmzOq23eODeukuY2XiAVoVpAECbuezMt1MHQjAiQxK8F+Y+g==}
     engines: {node: '>=20'}
     hasBin: true
 
@@ -3629,8 +3629,8 @@ packages:
     resolution: {integrity: sha512-YCYqxTLIB2OCqf6w9/Vef13baBVbwQIPcbT4Y56AfO6B9ajZhDhD8Jkveg/hJvT/iuMloKD/IYYkyMMNhr7Kqg==}
     hasBin: true
 
-  drizzle-orm@0.45.3:
-    resolution: {integrity: sha512-CAloER21cDdcgZ1OmjrZX82EeRNsdP+y0onX/eyoYDaYzki/adrAa91lzM5jWh7zZPK4qUbw/6LGv9J+A+uizA==}
+  drizzle-orm@0.45.4:
+    resolution: {integrity: sha512-NiM1YZpJ2UxyeE67DpDDZ+Tsw4YLX3trSlkNT7Tm9eKoUNb1LvaAaQzXgYQsWs+AQ9TUmmwMmBOCXuqqxUWKKQ==}
     peerDependencies:
       '@aws-sdk/client-rds-data': '>=3'
       '@cloudflare/workers-types': '>=4'
@@ -4782,13 +4782,13 @@ packages:
     resolution: {integrity: sha512-bk1ZMTwG/Vymx+zPoa28MhNzucFvXJWp3csrSuxuHPSMeUettaCoQ5Jvg07mtC4JGNpcfTwz41oVCnNgBK9+vA==}
     hasBin: true
 
-  playwright-core@1.63.0:
-    resolution: {integrity: sha512-rYCsBF/M5HjUch52bbtVONEFjv6Xu8sm8h72dNlR5bzIE1fvC/bxgspzkjSfU+MweEMmPM8KJebG6nnyxo5mCg==}
+  playwright-core@1.64.0:
+    resolution: {integrity: sha512-T9r+MZkTECl2+oUcZ26YgZzTrYidTsIhYYkJix+6iDOymOb1FB2RLLSOxRGnZGv5DStt+aduIVbt+E8WygXYpg==}
     engines: {node: '>=20'}
     hasBin: true
 
-  playwright@1.63.0:
-    resolution: {integrity: sha512-+7ziBLidS4NaNCdt57SUDT+wYmmd5fmiQejUic/kb+YsYSCPyOOE9sebzMjNmQrsnNpDJqd4WHvV/8lfKfUDUg==}
+  playwright@1.64.0:
+    resolution: {integrity: sha512-kVzTnYFYEyQ9RGzBjNCd2+yEqWmVbxl3AHPynv3qQ6JTjv4a+kwRcnqQwIpuP3NnrnIrE/Q6wWAIAvMfIE2/Yg==}
     engines: {node: '>=20'}
     hasBin: true
 
@@ -7043,9 +7043,9 @@ snapshots:
 
   '@pinojs/redact@0.4.0': {}
 
-  '@playwright/test@1.63.0':
+  '@playwright/test@1.64.0':
     dependencies:
-      playwright: 1.63.0
+      playwright: 1.64.0
 
   '@postalsys/vmc@1.1.5':
     dependencies:
@@ -8688,7 +8688,7 @@ snapshots:
       esbuild: 0.25.12
       tsx: 4.23.15
 
-  drizzle-orm@0.45.3(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3):
+  drizzle-orm@0.45.4(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3):
     optionalDependencies:
       '@types/better-sqlite3': 9.6.0
       better-sqlite3: 13.0.3
@@ -9873,11 +9873,11 @@ snapshots:
       sonic-boom: 4.2.1
       thread-stream: 4.2.0
 
-  playwright-core@1.63.0: {}
+  playwright-core@1.64.0: {}
 
-  playwright@1.63.0:
+  playwright@1.64.0:
     dependencies:
-      playwright-core: 1.63.0
+      playwright-core: 1.64.0
 
   png-chunk-text@1.0.0: {}
 

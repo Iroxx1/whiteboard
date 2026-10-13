@@ -60,7 +60,7 @@ Das Skript stoppt die App, **verschiebt** die aktuelle Datenbank nach `data/db-v
 - Dateien (Bilder, Anhänge) liegen nicht in der Datenbank. Fehlen sie, aus dem Proxmox-Backup zurückholen: `pct restore` in einen **neuen** Container oder einzelne Ordner aus dem Backup-Archiv entpacken.
 - Ganz ohne Skript: App stoppen, `data/db/whiteboard.sqlite*` beiseitelegen, Sicherung als `data/db/whiteboard.sqlite` kopieren, `chown 1000:1000`, starten.
 
-Getestet am 14.10.2026 in einem Wegwerf-Container (siehe `docs/STATUS.md`, Phase 6).
+Getestet am 13.10.2026 in einem Wegwerf-Container (siehe `docs/STATUS.md`, Phase 6).
 
 ## Überwachung
 

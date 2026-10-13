@@ -12,7 +12,7 @@ Wird vom umsetzenden Modell nach jeder Phase aktualisiert. Phasen und Abnahmekri
 | 3 | PWA und Teilen-Menü | ✅ fertig (12.10.2026), auf CT 118 ausgerollt (`sha-9464792`) |
 | 4 | Telegram-Bot | ✅ fertig (13.10.2026), auf CT 118 ausgerollt (`sha-d37a228`, Bot @familie_whiteboard_bot) |
 | 5 | E-Mail über Cloudflare | ✅ fertig (13.10.2026), auf CT 118 ausgerollt (`sha-ae9c4f4`); Cloudflare-Einrichtung durch den Auftraggeber offen |
-| 6 | Produktivbetrieb und Härtung | ✅ fertig (14.10.2026), Ausrollen offen |
+| 6 | Produktivbetrieb und Härtung | ✅ fertig (13.10.2026), Ausrollen offen |
 | 7 | Volltextsuche | offen |
 | 8 | OCR | offen |
 | 9 | Sprachnachrichten → Text | offen |
@@ -22,7 +22,7 @@ Wird vom umsetzenden Modell nach jeder Phase aktualisiert. Phasen und Abnahmekri
 
 _(keine)_
 
-## Stand Phase 6 (14.10.2026)
+## Stand Phase 6 (13.10.2026)
 
 - **Sicherheits-Header** auf allen Antworten: CSP nach PLAN.md 8.4 (`script-src 'self' 'wasm-unsafe-eval'`, `frame-src` nur Video-/Musik-/Instagram-Embeds und Excalidraws Einbettungsseiten, `frame-ancestors 'none'`, `report-uri /api/csp-report`), `Permissions-Policy`, `X-Frame-Options: DENY`, `Cross-Origin-Opener-Policy`, `Referrer-Policy`, `nosniff`. Hochgeladene Dateien behalten ihre Sandbox-CSP. HSTS setzt Cloudflare.
 - **CSP-Meldungen:** Verstöße meldet der Browser an `/api/csp-report`, das Log zeigt `csp violation` (nur Art und Quelle).
@@ -32,7 +32,7 @@ _(keine)_
 - **Überwachung:** `/healthz` zusätzlich mit „mehr als 10 % frei“. Verwaltung → **System**: Version, Inhalt, Speicher (frei, Datenbank, Dateien), letzte Sicherung, Verarbeitung mit „Erneut versuchen“ (einzeln/alle), Telegram- und E-Mail-Status (7 Tage angenommen/abgelehnt). Rotes Banner für Admins unter 15 % frei.
 - **Skripte:** `infra/scripts/setup-vm.sh` (Debian 13, VM oder LXC: Updates, unattended-upgrades, Docker, Log-Rotation, `/opt/whiteboard`), `update.sh <tag>` (sichert `.env`, wartet auf healthy, behält die 3 neuesten Images), `restore-db.sh <sicherung>` (verschiebt die aktuelle DB, nichts wird gelöscht).
 - **Dependabot:** wöchentlich montags, npm-Updates gruppiert (minor/patch), Docker-Basis-Image, GitHub Actions; Excalidraw ausgenommen (Patch).
-- **Abnahme in Wegwerf-Container CT 119** (14.10.2026, 23:41–23:44 Uhr):
+- **Abnahme in Wegwerf-Container CT 119** (13.10.2026, 23:41–23:44 Uhr):
   - Frische Installation nach `docs/SETUP.md` Schritte 1–3: Container anlegen → Skript → `.env` → healthy mit Einrichtungslink in **2½ Minuten** (ohne Cloudflare-Schritte, die nur einmal anfallen).
   - Wiederherstellung: konsistente Kopie der Produktiv-DB (per `serialize()` aus CT 118, ohne Datei dort) und `data/files` nach CT 119, `./restore-db.sh` → healthy nach 7 s; Konten, Boards, Einträge, Dateien (alle 10 vorhanden), Verlaufsstände, Telegram-Verknüpfung und Absender identisch mit CT 118; App verlangt keine Einrichtung.
   - Sicherheits-Header am laufenden Server geprüft.
@@ -158,14 +158,14 @@ _(keine)_
 | 13.10.2026 | Phase 5: Der Worker puffert die Mail vor dem Senden (kein Streaming), damit `forward()` danach sicher funktioniert; Cloudflare nimmt ohnehin höchstens 25 MB an | PLAN.md 5.8 „in Phase 5 testen“ |
 | 13.10.2026 | Phase 5: Zusätzliche Einstellung `EMAIL_ADDRESS` (nur Anzeige); Tabelle `inbound_emails` mit Status `queued/done/empty/failed/rejected` und Grund; abgelehnte Mails ohne Rohmail | Fehlersuche ohne Inhalte im Log |
 | 13.10.2026 | Phase 5: Der Worker leitet auch bei 401 (falsches Token) und anderen Fehlern an Gmail weiter, nur 403 wird abgewiesen | so geht bei Fehlkonfiguration nichts verloren |
-| 14.10.2026 | Phase 6: Proxmox-Backup bleibt bei „täglich, eine Sicherung“ (Plan: 7 täglich + 4 wöchentlich); ältere Datenbankstände liefern die App-Sicherungen (14 Tage) | Auftraggeber |
-| 14.10.2026 | Phase 6: Abnahmetests (frische Installation, Wiederherstellung) in einem Wegwerf-Container CT 119 statt einer frischen VM | Auftraggeber; Betrieb läuft als LXC |
-| 14.10.2026 | Phase 6: Automatische Sicherheitsupdates (`unattended-upgrades`) in CT 118, alte Images beim Update entfernen (3 bleiben) | Auftraggeber |
-| 14.10.2026 | Phase 6: Skript heißt weiter `setup-vm.sh` (Plan), funktioniert aber in VM und LXC | Plan-Name beibehalten |
-| 14.10.2026 | Phase 6: CSP ohne `'unsafe-eval'`. Folge: Beim Export/Kopieren **als SVG** kann Excalidraw die Schrift nicht einbetten (WebAssembly-Glue nutzt `new Function`); die SVG verweist dann auf die Schrift. PNG-Export und alles andere sind nicht betroffen | Sicherheit vor Randfunktion; einziger bekannter Verstoß (`script-src eval`) |
-| 14.10.2026 | Phase 6: Zusätzlich `/api/csp-report` (öffentlich, Ratenbegrenzung) und `'wasm-unsafe-eval'` sowie `worker-src blob:` für Excalidraws Export | CSP-Probleme werden im Log sichtbar |
-| 14.10.2026 | Phase 6: Excalidraw-Patch entfernt den Schrift-Ersatz von esm.sh | keine Anfragen an Dritte, keine CSP-Meldungen bei jedem Board-Aufruf |
-| 14.10.2026 | Phase 6: Seiten, die der Service Worker aus dem Cache liefert, haben die Header ihres Abrufs; CSP-Änderungen wirken nach dem nächsten App-Update („neu laden“) | Eigenschaft des Precache |
+| 13.10.2026 | Phase 6: Proxmox-Backup bleibt bei „täglich, eine Sicherung“ (Plan: 7 täglich + 4 wöchentlich); ältere Datenbankstände liefern die App-Sicherungen (14 Tage) | Auftraggeber |
+| 13.10.2026 | Phase 6: Abnahmetests (frische Installation, Wiederherstellung) in einem Wegwerf-Container CT 119 statt einer frischen VM | Auftraggeber; Betrieb läuft als LXC |
+| 13.10.2026 | Phase 6: Automatische Sicherheitsupdates (`unattended-upgrades`) in CT 118, alte Images beim Update entfernen (3 bleiben) | Auftraggeber |
+| 13.10.2026 | Phase 6: Skript heißt weiter `setup-vm.sh` (Plan), funktioniert aber in VM und LXC | Plan-Name beibehalten |
+| 13.10.2026 | Phase 6: CSP ohne `'unsafe-eval'`. Folge: Beim Export/Kopieren **als SVG** kann Excalidraw die Schrift nicht einbetten (WebAssembly-Glue nutzt `new Function`); die SVG verweist dann auf die Schrift. PNG-Export und alles andere sind nicht betroffen | Sicherheit vor Randfunktion; einziger bekannter Verstoß (`script-src eval`) |
+| 13.10.2026 | Phase 6: Zusätzlich `/api/csp-report` (öffentlich, Ratenbegrenzung) und `'wasm-unsafe-eval'` sowie `worker-src blob:` für Excalidraws Export | CSP-Probleme werden im Log sichtbar |
+| 13.10.2026 | Phase 6: Excalidraw-Patch entfernt den Schrift-Ersatz von esm.sh | keine Anfragen an Dritte, keine CSP-Meldungen bei jedem Board-Aufruf |
+| 13.10.2026 | Phase 6: Seiten, die der Service Worker aus dem Cache liefert, haben die Header ihres Abrufs; CSP-Änderungen wirken nach dem nächsten App-Update („neu laden“) | Eigenschaft des Precache |
 
 ## Manuelle Tests durch den Auftraggeber
 

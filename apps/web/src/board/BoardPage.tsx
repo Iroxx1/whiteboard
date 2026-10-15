@@ -102,6 +102,34 @@ function NoticeToast({
 
 const isWide = () => window.matchMedia('(min-width: 1024px)').matches
 
+/** Tells the editor whether Excalidraw runs in its phone layout (it passes that to renderTopRightUI). */
+function PhoneFlag({ isMobile, onChange }: { isMobile: boolean; onChange: (isMobile: boolean) => void }) {
+  useEffect(() => onChange(isMobile), [isMobile, onChange])
+  return null
+}
+
+/**
+ * Phone layout: Excalidraw's top bar is full width there, so search and inbox sit in a small column
+ * under its lock/hand buttons instead of squeezing into the toolbar.
+ */
+function PhoneButtons({ inboxCount, onInbox }: { inboxCount: number; onInbox: () => void }) {
+  const button =
+    'pointer-events-auto relative flex h-11 w-11 items-center justify-center rounded-xl border border-[var(--wb-border)] bg-[var(--wb-surface)] text-xl text-[var(--wb-text)] shadow-md active:bg-[var(--wb-hover)]'
+  return (
+    <div className="pointer-events-none absolute top-40 right-2 z-10 flex flex-col gap-2">
+      <SearchButton className={button} />
+      <button type="button" onClick={onInbox} title={de.inbox.toggle} aria-label={de.inbox.toggle} className={button}>
+        📥
+        {inboxCount > 0 && (
+          <span className="absolute -top-1.5 -right-1.5 min-w-5 rounded-full bg-[var(--wb-accent)] px-1 text-center text-xs leading-5 text-white">
+            {inboxCount}
+          </span>
+        )}
+      </button>
+    </div>
+  )
+}
+
 function Editor({ board, me }: { board: BoardDetail; me: Me }) {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -112,6 +140,7 @@ function Editor({ board, me }: { board: BoardDetail; me: Me }) {
   const [historyOpen, setHistoryOpen] = useState(false)
   const [uploadError, setUploadError] = useState(false)
   const [importError, setImportError] = useState(false)
+  const [phone, setPhone] = useState(false)
   const [docked, setDocked] = useState(isWide)
   const [details, setDetails] = useState<string | null>(null)
   const [notice, setNotice] = useState<PlacementNotice | null>(null)
@@ -376,7 +405,7 @@ function Editor({ board, me }: { board: BoardDetail; me: Me }) {
   const nextTheme = THEME_ORDER[(THEME_ORDER.indexOf(preference) + 1) % THEME_ORDER.length] ?? 'system'
 
   return (
-    <div ref={wrapperRef} className="fixed inset-0">
+    <div ref={wrapperRef} className="group/board fixed inset-0">
       <Excalidraw
         excalidrawAPI={setExcalidraw}
         initialData={initialData}
@@ -401,19 +430,27 @@ function Editor({ board, me }: { board: BoardDetail; me: Me }) {
           if (!wb) return null
           return <ItemCard itemId={wb.itemId} zoom={appState.zoom.value} theme={appState.theme} />
         }}
-        renderTopRightUI={() => (
+        renderTopRightUI={(isMobile) => (
           <>
-            {/* Hidden on phones: Excalidraw needs the full width for its toolbar there. */}
-            <span className="hidden max-w-[30vw] shrink-0 self-center truncate text-sm font-semibold sm:block">
-              {board.name}
-            </span>
-            <SearchButton className="self-center" />
-            <Sidebar.Trigger name="inbox" title={de.inbox.toggle}>
-              📥 <span className="hidden sm:inline">{de.inbox.toggle}</span>
-              {inboxCount > 0 && (
-                <span className="ml-1 rounded-full bg-[var(--wb-accent)] px-1.5 text-xs text-white">{inboxCount}</span>
-              )}
-            </Sidebar.Trigger>
+            <PhoneFlag isMobile={isMobile} onChange={setPhone} />
+            {/* Phones get their own buttons (PhoneButtons): Excalidraw's toolbar needs the full width there. */}
+            {!isMobile && (
+              <>
+                <span className="hidden max-w-[20vw] shrink-0 self-center truncate text-sm font-semibold xl:block">
+                  {board.name}
+                </span>
+                <SearchButton className="self-center" />
+                {/* Icon only below desktop width, so landscape phones and tablets do not squeeze the text. */}
+                <Sidebar.Trigger name="inbox" title={de.inbox.toggle}>
+                  <span className="inline-flex items-center gap-1 whitespace-nowrap">
+                    📥 <span className="hidden lg:inline">{de.inbox.toggle}</span>
+                    {inboxCount > 0 && (
+                      <span className="rounded-full bg-[var(--wb-accent)] px-1.5 text-xs text-white">{inboxCount}</span>
+                    )}
+                  </span>
+                </Sidebar.Trigger>
+              </>
+            )}
           </>
         )}
       >
@@ -442,9 +479,16 @@ function Editor({ board, me }: { board: BoardDetail; me: Me }) {
       </Excalidraw>
 
       {excalidraw && (
-        <div className="pointer-events-none absolute bottom-16 left-1/2 z-10 -translate-x-1/2 sm:bottom-4">
+        // Hidden while Excalidraw's own menu is open (it would cover the lowest entries) and, on
+        // phones, while the inbox panel covers the screen.
+        <div
+          className={`pointer-events-none absolute left-1/2 z-10 -translate-x-1/2 group-has-[.dropdown-menu]/board:hidden ${phone ? 'bottom-16 group-has-[.sidebar]/board:hidden' : 'bottom-16 sm:bottom-4'}`}
+        >
           <StickyTool api={excalidraw} />
         </div>
+      )}
+      {excalidraw && phone && (
+        <PhoneButtons inboxCount={inboxCount} onInbox={() => excalidraw.toggleSidebar({ name: 'inbox' })} />
       )}
       <StatusBanner status={status} />
       {uploadError && (

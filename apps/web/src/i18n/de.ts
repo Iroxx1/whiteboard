@@ -56,6 +56,7 @@ export const de = {
     settings: 'Einstellungen',
     admin: 'Verwaltung',
     logout: 'Abmelden',
+    menu: 'Menü',
     shareTest: 'Teilen-Test',
   },
   login: {

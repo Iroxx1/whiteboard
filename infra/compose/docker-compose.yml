@@ -24,12 +24,20 @@ services:
   # Speech to text (PLAN.md 5.11). Start with --profile transcription (COMPOSE_PROFILES=transcription in .env)
   # and TRANSCRIBE_ENABLED=true. Only reachable from the app through the internal network.
   # Model: ./models/ggml-${WHISPER_MODEL}.bin, loaded by infra/scripts/download-whisper-model.sh.
-  # Pinned by digest (v1.9.5 era, 2026-10-15); the image's entrypoint is "bash -c", so the command is one string.
+  # Own image (infra/docker/whisper.Dockerfile, whisper.cpp v1.9.5, AVX2 without AVX512), pinned by digest:
+  # the official ghcr.io/ggml-org/whisper.cpp image crashes with SIGILL on CPUs without AVX512.
   whisper:
-    image: ghcr.io/ggml-org/whisper.cpp:main@sha256:758df247db00e2b29d5b86176408f37f8c5c64028080bbc2a2b9c9433e7126c1
-    command: >-
-      whisper-server --host 0.0.0.0 --port 8080
-      -m /models/ggml-${WHISPER_MODEL:-small-q5_1}.bin -l de -t 2 --convert
+    image: ghcr.io/iroxx1/whiteboard-whisper@sha256:ef9dd4370561ebb5911388493afdc61368842d30c53224c32c0335b0832d64c0
+    command:
+      - --host=0.0.0.0
+      - --port=8080
+      - -m
+      - /models/ggml-${WHISPER_MODEL:-small-q5_1}.bin
+      - -l
+      - de
+      - -t
+      - "2"
+      - --convert
     volumes:
       - ./models:/models:ro
     restart: unless-stopped

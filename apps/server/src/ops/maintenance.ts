@@ -138,3 +138,24 @@ export function storage(dataDir: string): { freeBytes: number; totalBytes: numbe
   const freeBytes = stat.bavail * stat.bsize
   return { freeBytes, totalBytes, freeShare: totalBytes > 0 ? freeBytes / totalBytes : 1 }
 }
+
+/** Preview images (Phase 10) of boards that no longer exist (purged from the trash) are deleted. */
+export function pruneThumbnails(db: Db, dataDir: string): number {
+  const dir = path.join(dataDir, 'thumbs')
+  if (!fs.existsSync(dir)) return 0
+  const known = new Set(
+    db
+      .select({ id: boards.id })
+      .from(boards)
+      .all()
+      .map((board) => board.id),
+  )
+  let removed = 0
+  for (const name of fs.readdirSync(dir)) {
+    if (name.endsWith('.webp') && !known.has(name.slice(0, -5))) {
+      fs.rmSync(path.join(dir, name), { force: true })
+      removed += 1
+    }
+  }
+  return removed
+}

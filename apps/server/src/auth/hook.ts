@@ -16,6 +16,7 @@ const PUBLIC_API: { method: string; pattern: RegExp }[] = [
   { method: 'POST', pattern: /^\/api\/auth\/setup$/ },
   { method: 'POST', pattern: /^\/api\/auth\/login$/ },
   { method: 'POST', pattern: /^\/api\/auth\/logout$/ },
+  { method: 'POST', pattern: /^\/api\/auth\/passkey\/(options|login)$/ },
   { method: 'POST', pattern: /^\/api\/auth\/reset\/[^/]+$/ },
   { method: 'GET', pattern: /^\/api\/invites\/[^/]+$/ },
   { method: 'POST', pattern: /^\/api\/invites\/[^/]+$/ },

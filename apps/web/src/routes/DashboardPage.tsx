@@ -1,6 +1,6 @@
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { type BoardSummary, normalizeHashtag } from '@wb/shared'
+import { type BoardSummary, normalizeHashtag, normalizeTags } from '@wb/shared'
 import { type FormEvent, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 import { de } from '../i18n/de.ts'
@@ -21,9 +21,14 @@ function BoardForm({ board, onDone }: { board?: BoardSummary; onDone: (board: Bo
   const [hashtag, setHashtag] = useState(board?.hashtag ?? '')
   // Until the user edits the hashtag, it follows the name (PLAN.md 5.5, decided 12.10.2026).
   const [hashtagEdited, setHashtagEdited] = useState(Boolean(board))
+  const [tagsText, setTagsText] = useState(board?.tags.join(', ') ?? '')
   const save = useMutation({
-    mutationFn: () =>
-      board ? api.updateBoard(board.id, { name, hashtag }) : api.createBoard({ name, hashtag: hashtag || name }),
+    mutationFn: () => {
+      const tags = normalizeTags(tagsText.split(','))
+      return board
+        ? api.updateBoard(board.id, { name, hashtag, tags })
+        : api.createBoard({ name, hashtag: hashtag || name, tags })
+    },
     onSuccess: onDone,
   })
 
@@ -55,6 +60,12 @@ function BoardForm({ board, onDone }: { board?: BoardSummary; onDone: (board: Bo
           setHashtag(normalizeHashtag(event.target.value))
         }}
       />
+      <TextField
+        label={de.boardForm.tags}
+        hint={de.boardForm.tagsHint}
+        value={tagsText}
+        onChange={(event) => setTagsText(event.target.value)}
+      />
       <FormMessage error={save.error} />
       <div className="flex justify-end">
         <Button type="submit" variant="primary" disabled={save.isPending || !name.trim() || !hashtag}>
@@ -68,17 +79,45 @@ function BoardForm({ board, onDone }: { board?: BoardSummary; onDone: (board: Bo
 function BoardTile({ board, onRename, onDelete }: { board: BoardSummary; onRename: () => void; onDelete: () => void }) {
   return (
     <li className="group relative rounded-xl border border-[var(--wb-border)] bg-[var(--wb-surface)] shadow-sm transition hover:border-[var(--wb-accent)]">
-      <Link to={`/b/${board.id}`} className="block p-4 pr-10">
-        <div className="truncate font-semibold">{board.name}</div>
-        <div className="truncate text-sm text-[var(--wb-accent)]">#{board.hashtag}</div>
-        <div className="mt-2 text-xs text-[var(--wb-muted)]">
-          {de.dashboard.changed(formatRelative(board.updatedAt), board.updatedByName)}
+      <Link to={`/b/${board.id}`} className="block">
+        <div className="aspect-[4/3] overflow-hidden rounded-t-xl bg-[var(--wb-hover)]">
+          {board.thumbAt ? (
+            <img
+              src={`/api/boards/${board.id}/thumbnail?v=${board.thumbAt}`}
+              alt=""
+              loading="lazy"
+              className="h-full w-full object-cover object-top"
+            />
+          ) : (
+            <div className="flex h-full items-center justify-center text-xs text-[var(--wb-muted)]">
+              {de.dashboard.noPreview}
+            </div>
+          )}
+        </div>
+        <div className="p-4 pt-3">
+          <div className="truncate pr-8 font-semibold">{board.name}</div>
+          <div className="truncate text-sm text-[var(--wb-accent)]">#{board.hashtag}</div>
+          {board.tags.length > 0 && (
+            <div className="mt-1 flex flex-wrap gap-1">
+              {board.tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="rounded-full bg-[var(--wb-hover)] px-2 py-0.5 text-xs text-[var(--wb-muted)]"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
+          <div className="mt-2 text-xs text-[var(--wb-muted)]">
+            {de.dashboard.changed(formatRelative(board.updatedAt), board.updatedByName)}
+          </div>
         </div>
       </Link>
       <DropdownMenu.Root>
         <DropdownMenu.Trigger
           aria-label={de.dashboard.menu}
-          className="absolute top-2 right-2 rounded-md px-2 py-1 text-[var(--wb-muted)] hover:bg-[var(--wb-hover)]"
+          className="absolute top-2 right-2 rounded-md bg-[var(--wb-surface)]/80 px-2 py-1 text-[var(--wb-muted)] hover:bg-[var(--wb-hover)]"
         >
           ⋯
         </DropdownMenu.Trigger>
@@ -143,6 +182,7 @@ function BoardsOverview() {
   const boards = useQuery({ queryKey: BOARDS_KEY, queryFn: () => api.boards() })
   const [search, setSearch] = useState('')
   const [sort, setSort] = useState<Sort>('recent')
+  const [tagFilter, setTagFilter] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
   const [renaming, setRenaming] = useState<BoardSummary | null>(null)
   const [showTrash, setShowTrash] = useState(false)
@@ -151,15 +191,31 @@ function BoardsOverview() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: BOARDS_KEY }),
   })
 
+  const allTags = useMemo(() => {
+    const counts = new Map<string, string>()
+    for (const board of boards.data ?? []) {
+      for (const tag of board.tags)
+        counts.set(tag.toLocaleLowerCase('de'), counts.get(tag.toLocaleLowerCase('de')) ?? tag)
+    }
+    return [...counts.values()].toSorted((a, b) => a.localeCompare(b, 'de'))
+  }, [boards.data])
+  // A tag that no board has any more (renamed or removed) must not leave the list empty.
+  const activeTag = tagFilter && allTags.some((tag) => tag.toLocaleLowerCase('de') === tagFilter) ? tagFilter : null
+
   const visible = useMemo(() => {
     const term = search.trim().toLowerCase()
     const list = (boards.data ?? []).filter(
-      (board) => !term || board.name.toLowerCase().includes(term) || board.hashtag.includes(normalizeHashtag(term)),
+      (board) =>
+        (!activeTag || board.tags.some((tag) => tag.toLocaleLowerCase('de') === activeTag)) &&
+        (!term ||
+          board.name.toLowerCase().includes(term) ||
+          board.hashtag.includes(normalizeHashtag(term)) ||
+          board.tags.some((tag) => tag.toLowerCase().includes(term))),
     )
     return sort === 'name'
       ? list.toSorted((a, b) => a.name.localeCompare(b.name, 'de'))
       : list.toSorted((a, b) => b.updatedAt - a.updatedAt)
-  }, [boards.data, search, sort])
+  }, [boards.data, search, sort, activeTag])
 
   return (
     <>
@@ -187,6 +243,26 @@ function BoardsOverview() {
           <option value="name">{de.dashboard.sortName}</option>
         </select>
       </div>
+
+      {allTags.length > 0 && (
+        <fieldset aria-label={de.dashboard.tagFilter} className="mb-4 flex min-w-0 flex-wrap gap-1.5 border-0 p-0">
+          {[null, ...allTags].map((tag) => {
+            const key = tag?.toLocaleLowerCase('de') ?? null
+            const active = key === activeTag
+            return (
+              <button
+                key={key ?? 'all'}
+                type="button"
+                aria-pressed={active}
+                onClick={() => setTagFilter(key)}
+                className={`rounded-full border px-3 py-1 text-sm ${active ? 'border-[var(--wb-accent)] bg-[var(--wb-accent)] text-white' : 'border-[var(--wb-border)] bg-[var(--wb-surface)] text-[var(--wb-muted)]'}`}
+              >
+                {tag ?? de.dashboard.allTags}
+              </button>
+            )
+          })}
+        </fieldset>
+      )}
 
       {boards.isPending && <p className="text-[var(--wb-muted)]">{de.common.loading}</p>}
       <FormMessage error={boards.error ?? remove.error} />

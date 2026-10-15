@@ -20,8 +20,10 @@ import { ItemDetails } from './ItemDetails.tsx'
 import { wbOf } from './itemElements.ts'
 import { handleInboxChanged, handleItemUpdated, itemKey } from './itemsData.ts'
 import { type PlacementNotice, Placer } from './Placer.ts'
+import { isEditableTarget, onlyPdfs, urlFromText, urlFromUriList } from './pasteImport.ts'
 import { StickyTool } from './StickyTool.tsx'
 import { createStyleSaver, loadStyle } from './styleDefaults.ts'
+import { ThumbnailSaver } from './thumbnail.ts'
 
 declare global {
   interface Window {
@@ -109,12 +111,14 @@ function Editor({ board, me }: { board: BoardDetail; me: Me }) {
   const [status, setStatus] = useState<SyncStatus>('connecting')
   const [historyOpen, setHistoryOpen] = useState(false)
   const [uploadError, setUploadError] = useState(false)
+  const [importError, setImportError] = useState(false)
   const [docked, setDocked] = useState(isWide)
   const [details, setDetails] = useState<string | null>(null)
   const [notice, setNotice] = useState<PlacementNotice | null>(null)
   const syncRef = useRef<BoardSync | null>(null)
   const filesRef = useRef<FileSync | null>(null)
   const placerRef = useRef<Placer | null>(null)
+  const thumbRef = useRef<ThumbnailSaver | null>(null)
   const wrapperRef = useRef<HTMLDivElement>(null)
   const saveStyle = useMemo(() => createStyleSaver(me.id), [me.id])
   const [params, setParams] = useSearchParams()
@@ -159,6 +163,15 @@ function Editor({ board, me }: { board: BoardDetail; me: Me }) {
   useEffect(() => {
     if (!excalidraw) return
     const files = new FileSync(board.id, excalidraw, () => setUploadError(true))
+    // Dashboard preview: rendered after quiet times and when leaving, also on tab switch (Phase 10).
+    const thumbnail = new ThumbnailSaver(
+      board.id,
+      board.thumbAt === null,
+      () => void queryClient.invalidateQueries({ queryKey: ['boards'] }),
+    )
+    thumbRef.current = thumbnail
+    const onHidden = () => document.visibilityState === 'hidden' && void thumbnail.flush()
+    document.addEventListener('visibilitychange', onHidden)
     let placer: Placer | null = null
     const sync = new BoardSync(board.id, excalidraw, board, {
       onStatus: setStatus,
@@ -183,6 +196,9 @@ function Editor({ board, me }: { board: BoardDetail; me: Me }) {
     return () => {
       sync.stop()
       files.stop()
+      document.removeEventListener('visibilitychange', onHidden)
+      thumbnail.stop()
+      thumbRef.current = null
       syncRef.current = null
       filesRef.current = null
       placerRef.current = null
@@ -194,6 +210,7 @@ function Editor({ board, me }: { board: BoardDetail; me: Me }) {
     (elements: readonly OrderedExcalidrawElement[], appState: AppState, files: BinaryFiles) => {
       syncRef.current?.handleChange(elements, appState)
       filesRef.current?.handleFiles(files)
+      thumbRef.current?.update(elements, files)
       saveStyle(appState)
     },
     [saveStyle],
@@ -292,6 +309,69 @@ function Editor({ board, me }: { board: BoardDetail; me: Me }) {
     }
   }, [excalidraw, openDetails, queryClient])
 
+  // A pasted address or a dropped PDF becomes an inbox item and lands on the board as a card at the
+  // pointer (Phase 10). Plain text, images and everything else stay with Excalidraw.
+  useEffect(() => {
+    const wrapper = wrapperRef.current
+    if (!wrapper || !excalidraw) return
+    let pointer: { x: number; y: number } | null = null
+    const onMove = (event: PointerEvent) => {
+      pointer = { x: event.clientX, y: event.clientY }
+    }
+    const importItems = async (body: { url: string } | FormData, at: { x: number; y: number } | null) => {
+      try {
+        const result = await api.addItem(body)
+        const state = excalidraw.getAppState()
+        const spot = viewportCoordsToSceneCoords(
+          at
+            ? { clientX: at.x, clientY: at.y }
+            : { clientX: state.offsetLeft + state.width / 2, clientY: state.offsetTop + state.height / 2 },
+          state,
+        )
+        const ids = [...result.items.map((entry) => entry.id), ...result.duplicateIds]
+        void placerRef.current?.place(ids, { kind: 'point', x: spot.x, y: spot.y })
+        void queryClient.invalidateQueries({ queryKey: ['items'] })
+      } catch {
+        setImportError(true)
+      }
+    }
+    const pdfForm = (files: File[]) => {
+      const form = new FormData()
+      for (const file of files) form.append('files', file, file.name)
+      return form
+    }
+    const onPaste = (event: ClipboardEvent) => {
+      if (isEditableTarget(event.target)) return
+      const data = event.clipboardData
+      if (!data) return
+      const pdfs = onlyPdfs([...data.files])
+      const url = pdfs ? null : urlFromText(data.getData('text/plain'))
+      if (!pdfs && !url) return
+      event.preventDefault()
+      event.stopPropagation()
+      void importItems(pdfs ? pdfForm(pdfs) : { url: url ?? '' }, pointer)
+    }
+    const onDropImport = (event: DragEvent) => {
+      const data = event.dataTransfer
+      // Our own inbox drags are handled by the listener above.
+      if (!data || data.types.includes(DRAG_TYPE)) return
+      const pdfs = onlyPdfs([...data.files])
+      const url = pdfs ? null : urlFromUriList(data.getData('text/uri-list'))
+      if (!pdfs && !url) return
+      event.preventDefault()
+      event.stopPropagation()
+      void importItems(pdfs ? pdfForm(pdfs) : { url: url ?? '' }, { x: event.clientX, y: event.clientY })
+    }
+    wrapper.addEventListener('pointermove', onMove, true)
+    wrapper.addEventListener('paste', onPaste, true)
+    wrapper.addEventListener('drop', onDropImport, true)
+    return () => {
+      wrapper.removeEventListener('pointermove', onMove, true)
+      wrapper.removeEventListener('paste', onPaste, true)
+      wrapper.removeEventListener('drop', onDropImport, true)
+    }
+  }, [excalidraw, queryClient])
+
   const closeNotice = useCallback(() => setNotice(null), [])
   const nextTheme = THEME_ORDER[(THEME_ORDER.indexOf(preference) + 1) % THEME_ORDER.length] ?? 'system'
 
@@ -374,6 +454,15 @@ function Editor({ board, me }: { board: BoardDetail; me: Me }) {
           className="absolute top-28 left-1/2 z-20 -translate-x-1/2 rounded-lg bg-[var(--wb-danger)] px-3 py-2 text-sm text-white shadow"
         >
           {de.board.imageUploadFailed} ✕
+        </button>
+      )}
+      {importError && (
+        <button
+          type="button"
+          onClick={() => setImportError(false)}
+          className="absolute top-28 left-1/2 z-20 -translate-x-1/2 rounded-lg bg-[var(--wb-danger)] px-3 py-2 text-sm text-white shadow"
+        >
+          {de.board.importFailed} ✕
         </button>
       )}
       {notice && (

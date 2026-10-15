@@ -7,6 +7,7 @@ import { de } from '../i18n/de.ts'
 import { api } from '../lib/api.ts'
 import { ME_KEY, useMe } from '../lib/auth.tsx'
 import { formatRelative } from '../lib/format.ts'
+import { addPasskey, isCancelled, passkeysSupported } from '../lib/passkeys.ts'
 import { useMediaQuery } from '../lib/useMediaQuery.ts'
 import { Button, Card, FormMessage, TextField } from '../ui/kit.tsx'
 import { Layout } from '../ui/Layout.tsx'
@@ -141,6 +142,74 @@ function PasswordChange() {
           </Button>
         </div>
       </form>
+    </Card>
+  )
+}
+
+function Passkeys() {
+  const queryClient = useQueryClient()
+  const [supported, setSupported] = useState(true)
+  const [name, setName] = useState(() => describeDevice(navigator.userAgent))
+  const [message, setMessage] = useState<'added' | 'failed' | null>(null)
+  const passkeys = useQuery({ queryKey: ['passkeys'], queryFn: api.passkeys })
+  useEffect(() => void passkeysSupported().then(setSupported), [])
+  const refresh = () => queryClient.invalidateQueries({ queryKey: ['passkeys'] })
+  const add = useMutation({
+    mutationFn: () => addPasskey(name.trim() || describeDevice(navigator.userAgent)),
+    onSuccess: () => {
+      setMessage('added')
+      return refresh()
+    },
+    onError: (error) => setMessage(isCancelled(error) ? null : 'failed'),
+  })
+  const remove = useMutation({ mutationFn: api.deletePasskey, onSuccess: refresh })
+  return (
+    <Card title={de.settings.passkeys}>
+      <p className="mb-3 text-sm text-[var(--wb-muted)]">{de.settings.passkeysIntro}</p>
+      {passkeys.data?.length === 0 && <p className="mb-3 text-sm">{de.settings.passkeysNone}</p>}
+      <ul className="mb-3 divide-y divide-[var(--wb-border)]">
+        {passkeys.data?.map((key) => (
+          <li key={key.id} className="flex items-center justify-between gap-2 py-2">
+            <div className="min-w-0 text-sm">
+              <div className="truncate font-medium">{key.name}</div>
+              <div className="text-xs text-[var(--wb-muted)]">
+                {key.lastUsedAt ? de.settings.passkeyUsed(formatRelative(key.lastUsedAt)) : de.settings.passkeyNever}
+                {key.synced ? ` · ${de.settings.passkeySynced}` : ''}
+              </div>
+            </div>
+            <Button onClick={() => remove.mutate(key.id)} disabled={remove.isPending}>
+              {de.settings.passkeyRemove}
+            </Button>
+          </li>
+        ))}
+      </ul>
+      {supported ? (
+        <form
+          className="flex flex-wrap items-end gap-2"
+          onSubmit={(event) => {
+            event.preventDefault()
+            setMessage(null)
+            add.mutate()
+          }}
+        >
+          <div className="min-w-0 flex-1">
+            <TextField
+              label={de.settings.passkeyName}
+              maxLength={60}
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+            />
+          </div>
+          <Button type="submit" variant="primary" disabled={add.isPending}>
+            {de.settings.passkeyAdd}
+          </Button>
+        </form>
+      ) : (
+        <p className="text-sm text-[var(--wb-muted)]">{de.settings.passkeyUnsupported}</p>
+      )}
+      {message === 'added' && <p className="mt-2 text-sm text-[var(--wb-success)]">{de.settings.passkeyAdded}</p>}
+      {message === 'failed' && <p className="mt-2 text-sm text-[var(--wb-danger)]">{de.settings.passkeyFailed}</p>}
+      <FormMessage error={passkeys.error ?? remove.error} />
     </Card>
   )
 }
@@ -359,6 +428,9 @@ export function SettingsPage() {
       <div className="grid gap-4 md:grid-cols-2">
         <Profile />
         <PasswordChange />
+        <div className="md:col-span-2">
+          <Passkeys />
+        </div>
         <div className="md:col-span-2">
           <Telegram />
         </div>

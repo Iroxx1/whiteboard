@@ -1,4 +1,10 @@
 import type {
+  AuthenticationResponseJSON,
+  PublicKeyCredentialCreationOptionsJSON,
+  PublicKeyCredentialRequestOptionsJSON,
+  RegistrationResponseJSON,
+} from '@simplewebauthn/browser'
+import type {
   AdminUser,
   ApiErrorCode,
   AuthStatus,
@@ -13,6 +19,7 @@ import type {
   ItemStatus,
   Me,
   OneTimeLink,
+  PasskeyInfo,
   Role,
   SearchResult,
   SenderAddress,
@@ -62,6 +69,19 @@ export const api = {
     request<Me>('POST', '/api/auth/setup', body),
   login: (body: { email: string; password: string }) => request<Me>('POST', '/api/auth/login', body),
   logout: () => request<void>('POST', '/api/auth/logout'),
+  passkeyLoginOptions: () =>
+    request<{ challengeId: string; options: PublicKeyCredentialRequestOptionsJSON }>(
+      'POST',
+      '/api/auth/passkey/options',
+      {},
+    ),
+  passkeyLogin: (body: { challengeId: string; response: AuthenticationResponseJSON }) =>
+    request<Me>('POST', '/api/auth/passkey/login', body),
+  passkeys: () => get<PasskeyInfo[]>('/api/me/passkeys'),
+  passkeyRegisterOptions: () => request<PublicKeyCredentialCreationOptionsJSON>('POST', '/api/me/passkeys/options', {}),
+  passkeyRegister: (body: { name: string; response: RegistrationResponseJSON }) =>
+    request<PasskeyInfo>('POST', '/api/me/passkeys', body),
+  deletePasskey: (id: string) => request<void>('DELETE', `/api/me/passkeys/${enc(id)}`),
   invite: (token: string) => get<InviteInfo>(`/api/invites/${enc(token)}`),
   acceptInvite: (token: string, body: { name: string; email: string; password: string }) =>
     request<Me>('POST', `/api/invites/${enc(token)}`, body),
@@ -92,8 +112,9 @@ export const api = {
 
   boards: (trash = false) => get<BoardSummary[]>(`/api/boards${trash ? '?trash=1' : ''}`),
   board: (id: string) => get<BoardDetail>(`/api/boards/${enc(id)}`),
-  createBoard: (body: { name: string; hashtag?: string }) => request<BoardSummary>('POST', '/api/boards', body),
-  updateBoard: (id: string, body: { name?: string; hashtag?: string }) =>
+  createBoard: (body: { name: string; hashtag?: string; tags?: string[] }) =>
+    request<BoardSummary>('POST', '/api/boards', body),
+  updateBoard: (id: string, body: { name?: string; hashtag?: string; tags?: string[] }) =>
     request<BoardSummary>('PATCH', `/api/boards/${enc(id)}`, body),
   deleteBoard: (id: string) => request<void>('DELETE', `/api/boards/${enc(id)}`),
   restoreBoard: (id: string) => request<BoardSummary>('POST', `/api/boards/${enc(id)}/restore`),
@@ -101,6 +122,11 @@ export const api = {
   createSnapshot: (id: string) => request<SnapshotInfo>('POST', `/api/boards/${enc(id)}/snapshots`),
   restoreSnapshot: (id: string, snapshotId: string) =>
     request<void>('POST', `/api/boards/${enc(id)}/snapshots/${enc(snapshotId)}/restore`),
+  uploadBoardThumbnail: (boardId: string, blob: Blob) => {
+    const form = new FormData()
+    form.set('file', blob, 'preview.png')
+    return request<{ thumbAt: number }>('PUT', `/api/boards/${enc(boardId)}/thumbnail`, form)
+  },
   uploadBoardFile: (boardId: string, fileId: string, blob: Blob) => {
     const form = new FormData()
     form.set('fileId', fileId)

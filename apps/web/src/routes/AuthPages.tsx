@@ -1,10 +1,11 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { PASSWORD_MIN_LENGTH } from '@wb/shared'
-import { type FormEvent, useState } from 'react'
+import { type Me, PASSWORD_MIN_LENGTH } from '@wb/shared'
+import { type FormEvent, useEffect, useState } from 'react'
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router'
 import { de } from '../i18n/de.ts'
 import { api } from '../lib/api.ts'
 import { safeNext, useMe, useSignedIn } from '../lib/auth.tsx'
+import { isCancelled, passkeysSupported, signInWithPasskey } from '../lib/passkeys.ts'
 import { AuthLayout, Button, FormMessage, TextField } from '../ui/kit.tsx'
 
 function useAfterSignIn(next = '/') {
@@ -14,6 +15,33 @@ function useAfterSignIn(next = '/') {
     signedIn(me)
     navigate(next, { replace: true })
   }
+}
+
+/** "Mit Passkey anmelden" below the password form; hidden where the browser has no passkey support. */
+function PasskeyLogin({ onDone }: { onDone: (me: Me) => void }) {
+  const [supported, setSupported] = useState(false)
+  const [failed, setFailed] = useState(false)
+  useEffect(() => void passkeysSupported().then(setSupported), [])
+  const signIn = useMutation({
+    mutationFn: signInWithPasskey,
+    onSuccess: onDone,
+    onError: (error) => setFailed(!isCancelled(error)),
+  })
+  if (!supported) return null
+  return (
+    <div className="mt-4 flex flex-col gap-2 border-t border-[var(--wb-border)] pt-4">
+      <Button
+        onClick={() => {
+          setFailed(false)
+          signIn.mutate()
+        }}
+        disabled={signIn.isPending}
+      >
+        🔑 {de.login.passkey}
+      </Button>
+      {failed && <p className="text-sm text-[var(--wb-danger)]">{de.login.passkeyFailed}</p>}
+    </div>
+  )
 }
 
 export function LoginPage() {
@@ -59,6 +87,7 @@ export function LoginPage() {
         </Button>
         <p className="text-xs text-[var(--wb-muted)]">{de.login.forgot}</p>
       </form>
+      <PasskeyLogin onDone={done} />
     </AuthLayout>
   )
 }

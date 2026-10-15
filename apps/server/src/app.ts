@@ -5,6 +5,7 @@ import fastifyMultipart from '@fastify/multipart'
 import Fastify, { type FastifyInstance } from 'fastify'
 import { registerAdminRoutes } from './admin/routes.ts'
 import { registerAuthHook } from './auth/hook.ts'
+import { registerPasskeyRoutes } from './auth/passkeys.ts'
 import { registerAuthRoutes } from './auth/routes.ts'
 import { Sessions } from './auth/sessions.ts'
 import { SetupToken } from './auth/setup.ts'
@@ -24,7 +25,7 @@ import { originGuard } from './lib/originGuard.ts'
 import type { SafeFetchOptions } from './lib/safeFetch.ts'
 import { securityHeaders } from './lib/securityHeaders.ts'
 import { registerMeRoutes } from './me/routes.ts'
-import { collectBoardFiles, dailyBackup } from './ops/maintenance.ts'
+import { collectBoardFiles, dailyBackup, pruneThumbnails } from './ops/maintenance.ts'
 import { processorJobs } from './processors/index.ts'
 import { RealtimeHub } from './realtime/hub.ts'
 import { attachSocketServer } from './realtime/socket.ts'
@@ -146,6 +147,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
   registerManifestRoute(app, config)
   registerAuthRoutes(app, ctx)
   registerMeRoutes(app, ctx)
+  registerPasskeyRoutes(app, ctx)
   registerAdminRoutes(app, ctx)
   registerBoardRoutes(app, ctx)
   registerFileRoutes(app, ctx)
@@ -172,6 +174,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
       queue.purgeFinished()
       telegram.purgeOld()
       email.purgeOld()
+      pruneThumbnails(database.db, config.DATA_DIR)
       const collected = collectBoardFiles(database.db, config.DATA_DIR)
       if (collected > 0) app.log.info({ removed: collected }, 'unused board images removed')
     } catch (error) {

@@ -33,6 +33,27 @@ export const sessions = sqliteTable(
   (table) => [index('sessions_user_idx').on(table.userId)],
 )
 
+// Passkeys (Phase 10): an additional way to sign in; the password stays as the fallback.
+export const passkeys = sqliteTable(
+  'passkeys',
+  {
+    // WebAuthn credential id, base64url.
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    publicKey: blob('public_key', { mode: 'buffer' }).notNull(),
+    counter: integer('counter').notNull().default(0),
+    transportsJson: text('transports_json').notNull().default('[]'),
+    name: text('name').notNull(),
+    deviceType: text('device_type', { enum: ['singleDevice', 'multiDevice'] }).notNull(),
+    backedUp: integer('backed_up', { mode: 'boolean' }).notNull().default(false),
+    createdAt: integer('created_at').notNull(),
+    lastUsedAt: integer('last_used_at'),
+  },
+  (table) => [index('passkeys_user_idx').on(table.userId)],
+)
+
 export const invites = sqliteTable('invites', {
   id: text('id').primaryKey(),
   tokenHash: text('token_hash').notNull().unique(),
@@ -72,6 +93,10 @@ export const boards = sqliteTable(
     elementsJson: text('elements_json').notNull().default('[]'),
     appStateJson: text('app_state_json').notNull().default('{}'),
     inboxFrameId: text('inbox_frame_id'),
+    // Free-form labels for the dashboard filter (Phase 10), JSON array of strings.
+    tagsJson: text('tags_json').notNull().default('[]'),
+    // When the preview image data/thumbs/<id>.webp was written (Phase 10); null = none yet.
+    thumbAt: integer('thumb_at'),
   },
   (table) => [index('boards_deleted_idx').on(table.deletedAt)],
 )

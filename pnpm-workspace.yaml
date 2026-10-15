@@ -5,3 +5,9 @@ allowBuilds:
   esbuild: true
 patchedDependencies:
   '@excalidraw/excalidraw@0.18.1': patches/@excalidraw__excalidraw@0.18.1.patch
+# One copy of the ASN.1 libraries: mailauth pulls 2.8 while @simplewebauthn/server (passkeys) needs
+# matching 2.11 classes, otherwise signature checks fail with "Cannot get schema for ECDSASigValue".
+overrides:
+  '@peculiar/asn1-schema': 2.11.0
+  '@peculiar/asn1-x509': 2.11.0
+  '@peculiar/asn1-x509-logotype': 2.11.0

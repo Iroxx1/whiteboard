@@ -16,11 +16,22 @@ Wird vom umsetzenden Modell nach jeder Phase aktualisiert. Phasen und Abnahmekri
 | 7 | Volltextsuche | ✅ fertig (13.10.2026), auf CT 118 ausgerollt (`sha-ebc9e5c`, 14.10.2026) |
 | 8 | OCR | ✅ fertig (14.10.2026), auf CT 118 ausgerollt (`sha-a89ac34`, `OCR_ENABLED=true`) |
 | 9 | Sprachnachrichten → Text | ✅ fertig und abgenommen (15.10.2026), auf CT 118 ausgerollt (`sha-46caff8`, eigenes AVX2-Whisper-Image) |
-| 10 | Feinschliff (optional) | offen |
+| 10 | Feinschliff (Passkeys, Board-Tags, Vorschaubilder, Link/PDF per Einfügen) | 🔧 Code fertig (15.10.2026), Ausrollen und Abnahme am Handy offen |
 
 ## Offene Fragen an den Auftraggeber
 
 _(keine)_
+
+## Stand Phase 10 (15.10.2026)
+
+Umfang mit dem Auftraggeber abgestimmt: Passkeys, Link/PDF per Einfügen, Board-Vorschaubilder, Board-Tags; **nicht** umgesetzt: Telegram-Dateien über 20 MB (lokaler Bot-API-Server, wenig Nutzen).
+
+- **Board-Tags:** Spalte `boards.tags_json` (höchstens 10 Tags, je bis 24 Zeichen, ohne Unterscheidung der Groß-/Kleinschreibung eindeutig). Setzen beim Anlegen und unter „Name und Tags“; im Dashboard Tag-Chips zum Filtern, die Suche findet auch Tags.
+- **Vorschaubilder:** Der **Browser** rendert die Zeichenfläche (Excalidraw `exportToBlob`, hell, 800 px) und lädt sie per `PUT /api/boards/:id/thumbnail` hoch, und zwar 30 s nach der letzten Änderung, beim Verlassen des Boards und beim Wechsel des Tabs. Der Server codiert neu als WebP (höchstens 640 × 480) nach `data/thumbs/<boardId>.webp`, `boards.thumb_at` dient als Cache-Schlüssel. Karten (Link, PDF …) erscheinen im Bild nur als Platzhalter. Verwaiste Bilder räumt die Wartung auf.
+- **Link/PDF per Einfügen:** Strg+V mit genau einer http(s)-Adresse oder abgelegte PDF-Dateien (auch aus dem Dateimanager, auch eine Adresse aus dem Browser per Ziehen) legen einen Eintrag an (Vorschau, Suche, Detailansicht wie über das Teilen-Menü) und platzieren ihn als Karte an der Mausposition. Normaler Text, Bilder und gemischte Ablagen bleiben bei Excalidraw. Eine schon vorhandene Adresse wird nur platziert (Duplikat).
+- **Passkeys:** zusätzlich zum Passwort (`@simplewebauthn/server` und `/browser` 14). Tabelle `passkeys`; die Relying-Party-ID ist der Hostname aus `PUBLIC_URL` (**ändert sich die Domain, gelten die Passkeys nicht mehr, das Passwort bleibt**). Einrichten unter Einstellungen → Passkeys, anmelden mit „Mit Passkey anmelden“ auf der Login-Seite (auffindbare Zugangsdaten, keine E-Mail-Eingabe nötig, Bildschirmsperre/Biometrie Pflicht). Einmal-Challenges im Speicher (5 min), Anmeldeversuche begrenzt (30 je 15 min und IP). Entfernen jederzeit; das Passwort bleibt die Notlösung (auch Reset-Links).
+- **Abhängigkeits-Fix:** `pnpm-workspace.yaml` → `overrides` auf einheitliche `@peculiar/asn1-schema|x509|x509-logotype` 2.11.0, sonst brachte `mailauth` ältere Versionen mit und die Signaturprüfung scheiterte mit „Cannot get schema for ECDSASigValue“.
+- **Tests:** Server (Tags, Vorschau-Upload und -Ablehnung, Passkeys mit einem virtuellen Authenticator: Registrierung, Anmeldung, Zähler, Replay, falsche Signatur, Entfernen), Web (Einfüge-Erkennung), E2E (Passkey mit virtuellem Authenticator in Chrome, Tags + Filter + Vorschau, Einfügen einer Adresse).
 
 ## Stand Phase 9 (15.10.2026)
 
@@ -208,6 +219,8 @@ _(keine)_
 | 14.10.2026 | Phase 8: OCR als eigener Job nach `process_image`/`process_pdf`, Tesseract mit einem Thread | Karte sofort fertig, Oberfläche bleibt flüssig (Abnahmekriterium) |
 | 15.10.2026 | Phase 9: Modell `small-q5_1`, nur Audio (keine Videos), kein Nachholen des Bestands, RAM von CT 118 erst messen | Auftraggeber |
 
+| 15.10.2026 | Phase 10: Tags statt Ordner, Link/PDF per Einfügen als Eintrag + Karte, Passkeys zusätzlich zum Passwort, alles in einem Durchgang ausrollen; Telegram-Dateien > 20 MB weggelassen | Auftraggeber |
+
 ## Manuelle Tests durch den Auftraggeber
 
 ### Phase 0
@@ -311,3 +324,14 @@ _(keine)_
 - [x] WhatsApp-Sprachnachricht (`.opus`) über das Teilen-Menü schicken: deutsch transkribiert?
 - [x] Wort aus dem Transkript in der Suche finden
 - [x] Dauer gemessen (≈ 30 s je Minute Sprache) und in `docs/BETRIEB.md` eingetragen; RAM/Swap unkritisch
+
+### Phase 10
+
+- [ ] Ausrollen auf CT 118 (nach Freigabe)
+- [ ] Einstellungen → Passkeys: am Handy einen Passkey anlegen; abmelden; „Mit Passkey anmelden“ klappt mit Fingerabdruck/Bildschirmsperre
+- [ ] Mit Passwort geht die Anmeldung weiterhin
+- [ ] Board anlegen mit Tags (z. B. „Urlaub, Familie“); im Dashboard erscheinen die Chips, ein Klick filtert
+- [ ] Nach dem Zeichnen auf einem Board und dem Zurück zur Übersicht zeigt die Kachel ein Vorschaubild
+- [ ] Auf dem PC eine Adresse kopieren und im Board mit Strg+V einfügen: Karte erscheint an der Mausposition, Eintrag steht in der Inbox-Liste/Suche
+- [ ] Eine PDF-Datei aus dem Explorer auf das Board ziehen: Karte mit Seite 1
+- [ ] Normalen Text einfügen: weiter wie bisher (Textelement)

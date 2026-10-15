@@ -14,6 +14,16 @@ export type Me = {
   theme: ThemePreference
 }
 
+/** A registered passkey as shown in the settings (Phase 10). */
+export type PasskeyInfo = {
+  id: string
+  name: string
+  createdAt: number
+  lastUsedAt: number | null
+  /** Synced through the platform's cloud (e.g. Google Password Manager), not bound to one device. */
+  synced: boolean
+}
+
 export type AuthStatus = { setupRequired: boolean }
 
 export type SessionInfo = {
@@ -47,6 +57,28 @@ export type BoardSummary = {
   updatedAt: number
   updatedByName: string | null
   deletedAt: number | null
+  /** Free-form labels for filtering on the dashboard (Phase 10). */
+  tags: string[]
+  /** When the preview image was written; null = none (Phase 10). */
+  thumbAt: number | null
+}
+
+/** Limits for board tags. */
+export const BOARD_TAG_MAX_LENGTH = 24
+export const BOARD_TAGS_MAX = 10
+
+/** Trims and de-duplicates (case-insensitive) a list of tags; empty and too long ones are dropped. */
+export function normalizeTags(input: readonly string[]): string[] {
+  const seen = new Set<string>()
+  const tags: string[] = []
+  for (const raw of input) {
+    const tag = raw.replace(/\s+/g, ' ').replace(/^#+/, '').trim()
+    const key = tag.toLocaleLowerCase('de')
+    if (!tag || tag.length > BOARD_TAG_MAX_LENGTH || seen.has(key)) continue
+    seen.add(key)
+    tags.push(tag)
+  }
+  return tags.slice(0, BOARD_TAGS_MAX)
 }
 
 export type BoardDetail = BoardSummary & {

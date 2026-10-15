@@ -88,6 +88,12 @@ docker compose logs --tail=20 whisper
 - **Dauer auf CT 118 (2 Kerne, i5-10500T, `small-q5_1`), gemessen am 15.10.2026:** 114 s Sprache dauerten 54 s, 32 s Sprache dauerten 18 s, also etwa **0,5 s pro Sekunde Sprache** (rund 30 s je Minute). Während der Arbeit: Whisper ca. 500 MB RAM, CPU beider Kerne ausgelastet, Swap praktisch unbenutzt (CT gesamt ca. 820 von 3072 MB).
 - **Fehlersuche:** Verwaltung → System zeigt „Whisper bereit“ oder „nicht erreichbar“. Ist Whisper aus, meldet `/healthz` 503. Logs: `docker compose logs whisper` und `docker compose logs app | grep transcribe`; fehlgeschlagene Jobs lassen sich unter System erneut versuchen.
 
+## Passkeys, Board-Tags und Vorschaubilder
+
+- **Passkeys** (Einstellungen → Passkeys): zusätzliche Anmeldung per Fingerabdruck, Gesicht oder Bildschirmsperre. Das Passwort bleibt gültig. Ein Passkey gehört zur Domain aus `PUBLIC_URL` (z. B. `board.dittgen.uk`); wird die Domain geändert, müssen Passkeys neu angelegt werden. Ist ein Gerät verloren: unter Einstellungen den Passkey entfernen oder, wenn man selbst nicht mehr hineinkommt, den Passwort-Link über die Kommandozeile nutzen (unten). Ein deaktiviertes Konto kann sich auch mit Passkey nicht anmelden.
+- **Vorschaubilder** liegen als `data/thumbs/<board-id>.webp` (wenige KB je Board). Sie entstehen im Browser, sobald jemand ein Board bearbeitet und verlässt; fehlt eins, einmal das Board öffnen und zurückgehen. Sie sind in den Proxmox-Sicherungen enthalten, gehen aber auch ohne Verlust (werden neu erzeugt).
+- **Tags** stehen in der Datenbank (`boards.tags_json`) und damit in den täglichen DB-Sicherungen.
+
 ## Passwort-Link über die Kommandozeile
 
 Für den Notfall, z. B. wenn der einzige Admin sein Passwort vergessen hat. Der Befehl gibt einen einmaligen Link aus (24 Stunden gültig); ein deaktiviertes Konto wird dabei wieder aktiviert.
@@ -110,6 +116,8 @@ Den Link im Browser öffnen und ein neues Passwort setzen. Danach sind alle ande
 | Link-Karte ohne Bild/Titel | Manche Seiten (Instagram, Amazon …) blockieren Abrufe vom Server; dann gibt es eine einfache Karte mit Domain. Private Adressen im Heimnetz ruft die Vorschau absichtlich nie ab |
 | Kein „Erkannter Text“ bei einem Bild/PDF | Nur wenn `OCR_ENABLED=true` in der `.env`. Fotos ohne gut lesbare Schrift ergeben absichtlich keinen Text (Konfidenz-Filter); PDFs mit eingebetteter Textebene bekommen keine OCR (ihr Text steht unter „PDF-Text“). Fehler: `docker compose logs app | grep ocr` |
 | Kein „Transkript“ bei einer Sprachnachricht | Nur wenn `TRANSCRIBE_ENABLED=true` und der Whisper-Container läuft (siehe „Sprache zu Text“). Audio, das vor der Einrichtung kam, wird nicht nachträglich transkribiert. Fehler: `docker compose logs app | grep transcribe` |
+| „Mit Passkey anmelden“ fehlt oder schlägt fehl | Der Browser muss Passkeys unterstützen und die Seite über HTTPS (oder localhost) laufen. Ein Passkey gilt nur für die in `PUBLIC_URL` eingetragene Domain. Log: `docker compose logs app | grep passkey` |
+| Board-Kachel ohne Vorschaubild | Das Board wurde noch nicht (seit dem Update) bearbeitet und verlassen. Board öffnen, kurz warten, zurück zur Übersicht |
 | Video lässt sich nicht abspielen | Das Format kann der Browser nicht abspielen (z. B. manche .mov/.3gp); über „Herunterladen“ öffnen |
 | Telegram-Bot antwortet nicht | `docker compose logs app | grep telegram`: „token rejected“ = Token in der `.env` falsch (neu bei @BotFather mit `/token`); „not reachable“ = keine Verbindung zu Telegram, der Bot versucht es jede Minute neu. In den Einstellungen steht „nicht eingerichtet“, solange der Bot nicht verbunden ist |
 | Bot sagt „Dieser Bot ist privat.“ | Das Telegram-Konto ist nicht (mehr) verknüpft: in der App unter Einstellungen neu verbinden |

@@ -23,7 +23,7 @@ export async function adminPage(browser: Browser): Promise<Page> {
     await page.goto('/login')
     await page.getByLabel('E-Mail').fill(ADMIN_EMAIL)
     await page.getByLabel('Passwort').fill(PASSWORD)
-    await page.getByRole('button', { name: 'Anmelden' }).click()
+    await page.getByRole('button', { name: 'Anmelden', exact: true }).click()
   }
   await expect(page.getByRole('heading', { name: 'Boards' })).toBeVisible()
   return page

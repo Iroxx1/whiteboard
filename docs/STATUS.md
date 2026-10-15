@@ -15,7 +15,7 @@ Wird vom umsetzenden Modell nach jeder Phase aktualisiert. Phasen und Abnahmekri
 | 6 | Produktivbetrieb und Härtung | ✅ fertig (13.10.2026), auf CT 118 ausgerollt (`sha-201c626`) |
 | 7 | Volltextsuche | ✅ fertig (13.10.2026), auf CT 118 ausgerollt (`sha-ebc9e5c`, 14.10.2026) |
 | 8 | OCR | ✅ fertig (14.10.2026), auf CT 118 ausgerollt (`sha-a89ac34`, `OCR_ENABLED=true`) |
-| 9 | Sprachnachrichten → Text | 🔧 Code fertig und auf CT 118 ausgerollt (`sha-46caff8`, 15.10.2026), Dauer gemessen, Abnahme am Handy durch den Auftraggeber läuft |
+| 9 | Sprachnachrichten → Text | ✅ fertig und abgenommen (15.10.2026), auf CT 118 ausgerollt (`sha-46caff8`, eigenes AVX2-Whisper-Image) |
 | 10 | Feinschliff (optional) | offen |
 
 ## Offene Fragen an den Auftraggeber
@@ -307,7 +307,7 @@ _(keine)_
 ### Phase 9
 
 - [x] Ausgerollt auf CT 118 (15.10.2026): Modell geladen, `.env` angepasst, App `sha-46caff8` + Whisper healthy
-- [ ] Telegram-Sprachnachricht senden: Karte zeigt „Transkribiere …“, danach Text; Details zeigen „Transkript“
-- [ ] WhatsApp-Sprachnachricht (`.opus`) über das Teilen-Menü schicken: deutsch transkribiert?
-- [ ] Wort aus dem Transkript in der Suche finden
+- [x] Telegram-Sprachnachricht senden: Karte zeigt „Transkribiere …“, danach Text; Details zeigen „Transkript“
+- [x] WhatsApp-Sprachnachricht (`.opus`) über das Teilen-Menü schicken: deutsch transkribiert?
+- [x] Wort aus dem Transkript in der Suche finden
 - [x] Dauer gemessen (≈ 30 s je Minute Sprache) und in `docs/BETRIEB.md` eingetragen; RAM/Swap unkritisch

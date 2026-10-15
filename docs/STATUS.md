@@ -15,7 +15,7 @@ Wird vom umsetzenden Modell nach jeder Phase aktualisiert. Phasen und Abnahmekri
 | 6 | Produktivbetrieb und Härtung | ✅ fertig (13.10.2026), auf CT 118 ausgerollt (`sha-201c626`) |
 | 7 | Volltextsuche | ✅ fertig (13.10.2026), auf CT 118 ausgerollt (`sha-ebc9e5c`, 14.10.2026) |
 | 8 | OCR | ✅ fertig (14.10.2026), auf CT 118 ausgerollt (`sha-a89ac34`, `OCR_ENABLED=true`) |
-| 9 | Sprachnachrichten → Text | 🔧 Code fertig (15.10.2026), Ausrollen und Abnahme am Handy offen |
+| 9 | Sprachnachrichten → Text | 🔧 Code fertig und auf CT 118 ausgerollt (`sha-46caff8`, 15.10.2026), Abnahme am Handy offen |
 | 10 | Feinschliff (optional) | offen |
 
 ## Offene Fragen an den Auftraggeber
@@ -24,7 +24,7 @@ _(keine)_
 
 ## Stand Phase 9 (15.10.2026)
 
-- **Whisper-Container** `whisper` (whisper.cpp-Server) im Compose, Profil `transcription`, nur internes Netz, `mem_limit: 1500m`, `cpus: 2`, Healthcheck. Image `ghcr.io/ggml-org/whisper.cpp:main` **per Digest gepinnt** (`sha256:758df247…`, Stand 15.10.2026, whisper.cpp v1.9.5). Das Image hat `ENTRYPOINT bash -c`, der Befehl steht deshalb als ein String. Binary `whisper-server` liegt laut Dockerfile im PATH; **beim ersten Start auf CT 118 prüfen** (nicht lokal testbar, kein Docker-Daemon am PC).
+- **Whisper-Container** `whisper` im Compose, Profil `transcription`, nur internes Netz, `mem_limit: 1500m`, `cpus: 2`, Healthcheck. **Eigenes Image** `ghcr.io/iroxx1/whiteboard-whisper` (`infra/docker/whisper.Dockerfile`, whisper.cpp v1.9.5, AVX2 ohne AVX512, Workflow `whisper-image.yml`), per Digest gepinnt: das offizielle Image `ghcr.io/ggml-org/whisper.cpp` ist mit `-march=native` auf einem AVX512-Runner gebaut und stürzt auf dem i5-10500T mit SIGILL (Exit 132) ab. `whisper-server` kennt Optionen nur mit getrenntem Wert (`--host 0.0.0.0`, nicht `--host=…`).
 - **Modell:** `infra/scripts/download-whisper-model.sh [name]` lädt `ggml-<name>.bin` nach `./models` (Standard `small-q5_1`); `setup-vm.sh` legt das Skript mit ab. `WHISPER_MODEL` in `.env` wählt die Datei.
 - **Konfig:** `TRANSCRIBE_ENABLED`, `WHISPER_URL`, `WHISPER_MODEL`, `COMPOSE_PROFILES=transcription` (siehe `.env.example`).
 - **Job `transcribe_audio`:** nach `process_audio` (Player ist sofort nutzbar), schwer und Parallelität 1, `POST` multipart an `WHISPER_URL` (`response_format=json`, `temperature=0`), Zeitlimit 10 × Dauer + 60 s. Ergebnis → `item_texts(kind='transcript')`, Suche, Live-Update. Bei Fehler bleibt der Eintrag ohne Transkript.
@@ -306,7 +306,7 @@ _(keine)_
 
 ### Phase 9
 
-- [ ] Ausrollen auf CT 118 (nach Freigabe): Modell laden, `.env` anpassen, Image + Whisper starten
+- [x] Ausgerollt auf CT 118 (15.10.2026): Modell geladen, `.env` angepasst, App `sha-46caff8` + Whisper healthy
 - [ ] Telegram-Sprachnachricht senden: Karte zeigt „Transkribiere …“, danach Text; Details zeigen „Transkript“
 - [ ] WhatsApp-Sprachnachricht (`.opus`) über das Teilen-Menü schicken: deutsch transkribiert?
 - [ ] Wort aus dem Transkript in der Suche finden

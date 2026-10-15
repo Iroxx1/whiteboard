@@ -29,8 +29,10 @@ services:
   whisper:
     image: ghcr.io/iroxx1/whiteboard-whisper@sha256:ef9dd4370561ebb5911388493afdc61368842d30c53224c32c0335b0832d64c0
     command:
-      - --host=0.0.0.0
-      - --port=8080
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8080"
       - -m
       - /models/ggml-${WHISPER_MODEL:-small-q5_1}.bin
       - -l

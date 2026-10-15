@@ -22,10 +22,11 @@ Wird vom umsetzenden Modell nach jeder Phase aktualisiert. Phasen und Abnahmekri
 
 _(keine)_
 
-## Nachbesserung Handy-Ansicht (15.10.2026, `sha-c91f44c`)
+## Nachbesserung Handy-Ansicht (15.10.2026, `sha-c91f44c`, Inbox-Fix `sha-047f699`)
 
 - Kopfleiste am Handy einzeilig (Logo, Suche, Menü ☰ mit Seiten, Darstellung, Abmelden); ab 640 px wie bisher.
 - Board am Handy: Excalidraws Werkzeugleiste wird nicht mehr durch Suche/Inbox aus dem Bild gedrückt; beide haben eigene Knöpfe (`PhoneButtons`, rechts unter Sperre/Hand). Inbox-Auslöser unterhalb Desktop-Breite nur als Symbol. Haftnotiz-Leiste blendet sich bei offenem Excalidraw-Menü (und am Handy bei offener Inbox) aus und steht im Querformat über der unteren Leiste.
+- Bei geöffneter Inbox blendet sich am Handy auch das Paar Suche/Inbox-Knopf aus (Inbox hat ein eigenes ✕).
 - E2E `e2e/phone.spec.ts` sichert das Layout ab. Erkenntnis: Excalidraw ruft `renderTopRightUI(isMobile)` auch am Handy auf; die Handy-Entscheidung kommt von dort (`PhoneFlag`).
 
 ## Stand Phase 10 (15.10.2026)

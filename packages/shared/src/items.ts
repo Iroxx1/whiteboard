@@ -32,6 +32,10 @@ export type ItemMeta = {
   textPreview?: string
   /** Text recognition ran (with or without result), so it is not repeated (Phase 8). */
   ocrDone?: boolean
+  /** Speech to text is queued or running (Phase 9); cleared when it ends. */
+  transcribing?: boolean
+  /** First words of the transcript for the card (Phase 9). */
+  transcriptPreview?: string
 }
 
 export type Item = {

@@ -5,6 +5,7 @@ import { extractArticle } from './article.ts'
 import { unfurlLink } from './link.ts'
 import { processAudio, processDocument, processImage, processPdf, processVideo } from './media.ts'
 import { ocrImage, ocrPdf } from './ocr.ts'
+import { transcribeAudio } from './transcribe.ts'
 
 export type ProcessorOptions = {
   items: ItemService
@@ -12,6 +13,8 @@ export type ProcessorOptions = {
   fetchOptions?: Partial<SafeFetchOptions>
   /** Text recognition (PLAN.md 5.10); null = off. */
   ocrLangs?: string | null
+  /** Whisper server endpoint (PLAN.md 5.11); null = speech to text off. */
+  whisperUrl?: string | null
 }
 
 /** Job types with their limits (PLAN.md 5.5 table). */
@@ -85,7 +88,25 @@ export function processorJobs(options: ProcessorOptions): Record<string, JobDefi
         await ocrPdf(ocr, id, text, detail.meta.pageCount ?? 1)
       }
     }),
-    process_audio: itemJob((id) => processAudio(options, id), 1, false),
+    process_audio: itemJob(
+      async (id) => {
+        await processAudio(options, id, Boolean(options.whisperUrl))
+        if (options.whisperUrl) items.queueJob('transcribe_audio', { itemId: id })
+      },
+      1,
+      false,
+    ),
+    // Speech to text after the normal processing: the player is usable first (PLAN.md 5.11). One at a
+    // time and heavy; a failure only leaves the transcript out.
+    transcribe_audio: {
+      concurrency: 1,
+      heavy: true,
+      handler: async (payload) => {
+        const itemId = String(payload.itemId)
+        if (items.row(itemId) && options.whisperUrl) await transcribeAudio({ items, url: options.whisperUrl }, itemId)
+      },
+      onFailed: (payload) => items.setTranscript(String(payload.itemId), null, ''),
+    },
     process_video: itemJob((id) => processVideo(options, id), 1, true),
     process_document: itemJob((id) => processDocument(options, id), 1, false),
   }

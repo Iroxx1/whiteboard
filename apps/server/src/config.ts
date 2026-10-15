@@ -44,6 +44,20 @@ const schema = z.object({
       .regex(/^[a-z_]+(\+[a-z_]+)*$/)
       .default('deu+eng'),
   ),
+  // Speech to text for voice messages and audio files via a whisper.cpp server (PLAN.md 5.11).
+  TRANSCRIBE_ENABLED: z
+    .enum(['true', 'false', '1', '0', ''])
+    .default('false')
+    .transform((value) => value === 'true' || value === '1'),
+  WHISPER_URL: z.preprocess(emptyToUndefined, z.url({ protocol: /^https?$/ }).default('http://whisper:8080/inference')),
+  // Model file in ./models (ggml-<name>.bin); shown on the system page, used by compose and the download script.
+  WHISPER_MODEL: z.preprocess(
+    emptyToUndefined,
+    z
+      .string()
+      .regex(/^[\w.-]+$/)
+      .default('small-q5_1'),
+  ),
   // Token from @BotFather; empty = Telegram bot off (PLAN.md 5.7).
   TELEGRAM_BOT_TOKEN: z.preprocess(
     emptyToUndefined,

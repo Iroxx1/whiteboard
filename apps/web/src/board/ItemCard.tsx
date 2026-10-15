@@ -82,6 +82,14 @@ function Body({ item, theme }: { item: Item; theme: Theme }) {
           <div className={`line-clamp-2 text-[13px] leading-snug ${muted}`}>{item.meta.description}</div>
         )}
         {item.kind !== 'link' && <div className={`text-[12px] ${muted}`}>{fileFacts(item)}</div>}
+        {item.kind === 'audio' && item.meta.transcribing && (
+          <div className={`flex items-center gap-2 text-[12px] ${muted}`}>
+            <Spinner /> {de.inbox.transcribing}
+          </div>
+        )}
+        {item.kind === 'audio' && item.meta.transcriptPreview && (
+          <div className={`line-clamp-4 text-[12px] leading-snug ${muted}`}>{item.meta.transcriptPreview}</div>
+        )}
         {textPreview && (
           <pre className={`line-clamp-6 overflow-hidden text-[12px] leading-snug whitespace-pre-wrap ${muted}`}>
             {textPreview}

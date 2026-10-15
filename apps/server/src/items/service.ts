@@ -721,7 +721,14 @@ export class ItemService {
     this.inboxChanged()
   }
 
-  setText(itemId: string, kind: 'pdf' | 'doc' | 'article' | 'ocr', text: string) {
+  /** Ends speech to text: stores the transcript (if any), updates the card and tells clients. */
+  setTranscript(itemId: string, text: string | null, preview: string) {
+    if (text) this.setText(itemId, 'transcript', text)
+    this.patchMeta(itemId, { transcribing: false, ...(text ? { transcriptPreview: preview } : {}) })
+    this.itemUpdated(itemId)
+  }
+
+  setText(itemId: string, kind: 'pdf' | 'doc' | 'article' | 'ocr' | 'transcript', text: string) {
     this.db
       .insert(itemTexts)
       .values({ itemId, kind, text, createdAt: Date.now() })

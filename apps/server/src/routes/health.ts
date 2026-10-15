@@ -2,6 +2,7 @@ import fs from 'node:fs'
 import type { FastifyInstance } from 'fastify'
 import type { AppContext } from '../context.ts'
 import { STORAGE_FAIL_FREE, storage } from '../ops/maintenance.ts'
+import { whisperReachable } from '../processors/transcribe.ts'
 
 export function registerHealthRoutes(app: FastifyInstance, ctx: AppContext) {
   // Public on purpose; reveals no details (PLAN.md 6).
@@ -15,6 +16,8 @@ export function registerHealthRoutes(app: FastifyInstance, ctx: AppContext) {
     } catch {
       healthy = false
     }
+    // A configured but unreachable whisper server counts as unhealthy (PLAN.md 7.7).
+    if (healthy && ctx.config.TRANSCRIBE_ENABLED && !(await whisperReachable(ctx.config.WHISPER_URL))) healthy = false
     reply.header('Cache-Control', 'no-store')
     return reply.code(healthy ? 200 : 503).send({ status: healthy ? 'ok' : 'error' })
   })

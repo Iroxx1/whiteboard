@@ -100,6 +100,11 @@ export function SystemCard() {
                   : t.telegramDown,
               )}
         </Row>
+        <Row label={t.whisperLabel}>
+          {!data.whisper.enabled
+            ? t.off
+            : ok(data.whisper.reachable, data.whisper.reachable ? t.whisperOn(data.whisper.model) : t.whisperDown)}
+        </Row>
         <Row label={t.emailLabel}>
           {!data.email.configured ? (
             t.off

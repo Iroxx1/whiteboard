@@ -118,5 +118,6 @@ export type SystemInfo = {
     failures: { id: string; type: string; lastError: string | null; finishedAt: number | null }[]
   }
   telegram: { configured: boolean; connected: boolean; polling: boolean; username: string | null }
+  whisper: { enabled: boolean; reachable: boolean; model: string }
   email: { configured: boolean; address: string | null; accepted7d: number; rejected7d: number; failed7d: number }
 }

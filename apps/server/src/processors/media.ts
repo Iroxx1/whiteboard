@@ -101,9 +101,11 @@ const durationOf = (result: Probe) => {
   return Number.isFinite(seconds) && seconds > 0 ? Math.round(seconds * 1000) : undefined
 }
 
-export async function processAudio(ctx: MediaContext, itemId: string) {
+export async function processAudio(ctx: MediaContext, itemId: string, transcribing = false) {
   const durationMs = durationOf(await probe(original(ctx, itemId).file, false))
-  ctx.items.setProcessed(itemId, { meta: durationMs ? { durationMs } : {} })
+  ctx.items.setProcessed(itemId, {
+    meta: { ...(durationMs ? { durationMs } : {}), ...(transcribing ? { transcribing: true } : {}) },
+  })
 }
 
 /** Duration and a still frame after 1 s (or the first frame for very short clips). */

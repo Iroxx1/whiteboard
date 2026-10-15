@@ -21,6 +21,33 @@ services:
         max-size: 10m
         max-file: "3"
 
+  # Speech to text (PLAN.md 5.11). Start with --profile transcription (COMPOSE_PROFILES=transcription in .env)
+  # and TRANSCRIBE_ENABLED=true. Only reachable from the app through the internal network.
+  # Model: ./models/ggml-${WHISPER_MODEL}.bin, loaded by infra/scripts/download-whisper-model.sh.
+  # Pinned by digest (v1.9.5 era, 2026-10-15); the image's entrypoint is "bash -c", so the command is one string.
+  whisper:
+    image: ghcr.io/ggml-org/whisper.cpp:main@sha256:758df247db00e2b29d5b86176408f37f8c5c64028080bbc2a2b9c9433e7126c1
+    command: >-
+      whisper-server --host 0.0.0.0 --port 8080
+      -m /models/ggml-${WHISPER_MODEL:-small-q5_1}.bin -l de -t 2 --convert
+    volumes:
+      - ./models:/models:ro
+    restart: unless-stopped
+    profiles: ["transcription"]
+    mem_limit: 1500m
+    cpus: 2
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs -o /dev/null http://127.0.0.1:8080/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
   # Optional: own Cloudflare tunnel inside this stack (PLAN.md 7.2). Start with --profile tunnel.
   cloudflared:
     image: cloudflare/cloudflared:2026.10.0

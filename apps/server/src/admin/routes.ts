@@ -10,6 +10,7 @@ import { assets, boards, inboundEmails, invites, items, passwordResets, users } 
 import { noStore, parseBody, sendError } from '../lib/http.ts'
 import { randomToken, sha256 } from '../lib/tokens.ts'
 import { dailyBackup, lastBackup, STORAGE_WARN_FREE, storage } from '../ops/maintenance.ts'
+import { whisperReachable } from '../processors/transcribe.ts'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 export const INVITE_LIFETIME_MS = 7 * DAY_MS
@@ -160,6 +161,11 @@ export function registerAdminRoutes(app: FastifyInstance, ctx: AppContext) {
         connected: ctx.telegram.enabled,
         polling: ctx.telegram.isRunning,
         username: ctx.telegram.username,
+      },
+      whisper: {
+        enabled: ctx.config.TRANSCRIBE_ENABLED,
+        reachable: ctx.config.TRANSCRIBE_ENABLED && (await whisperReachable(ctx.config.WHISPER_URL)),
+        model: ctx.config.WHISPER_MODEL,
       },
       email: {
         configured: Boolean(ctx.config.EMAIL_INGEST_TOKEN),

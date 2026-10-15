@@ -31,7 +31,7 @@ function Preview({ item }: { item: ItemDetail }) {
   }
   if (item.kind === 'audio' && original) {
     return (
-      // biome-ignore lint/a11y/useMediaCaption: user-shared voice messages have no captions (transcripts follow in Phase 9)
+      // biome-ignore lint/a11y/useMediaCaption: the transcript is shown as text below the player
       <audio controls preload="metadata" src={assetUrl(original.id)} className="w-full">
         {de.details.noPlayer}
       </audio>
@@ -190,6 +190,9 @@ export function ItemDetails({ itemId, onClose }: { itemId: string; onClose?: () 
             onSave={(note) => update.mutateAsync({ note })}
           />
         </>
+      )}
+      {item.kind === 'audio' && item.meta.transcribing && (
+        <p className="text-sm text-[var(--wb-muted)]">{de.inbox.transcribing}</p>
       )}
       {item.texts.map((text) => (
         <section key={text.kind} className="flex flex-col gap-1">

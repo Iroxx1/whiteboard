@@ -95,6 +95,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
         items,
         tmpDir,
         ocrLangs: config.OCR_ENABLED ? config.OCR_LANGS : null,
+        whisperUrl: config.TRANSCRIBE_ENABLED ? config.WHISPER_URL : null,
         ...(options.fetchOptions ? { fetchOptions: options.fetchOptions } : {}),
       }),
       ingest_email: {

@@ -64,10 +64,29 @@ Getestet am 13.10.2026 in einem Wegwerf-Container (siehe `docs/STATUS.md`, Phase
 
 ## Überwachung
 
-- **`/healthz`:** Datenbank erreichbar, `/data` beschreibbar und mehr als 10 % frei. Uptime Kuma kann diese Adresse prüfen.
+- **`/healthz`:** Datenbank erreichbar, `/data` beschreibbar, mehr als 10 % frei und (falls `TRANSCRIBE_ENABLED=true`) Whisper erreichbar. Uptime Kuma kann diese Adresse prüfen.
 - **Verwaltung → System:** Version, Inhalt, freier Speicher, letzte Sicherung, Verarbeitung (wartend, laufend, fehlgeschlagen mit **Erneut versuchen**), Telegram- und E-Mail-Status.
 - **Speicherwarnung:** Admins sehen oben ein rotes Banner, wenn weniger als 15 % frei sind. Abhilfe: Papierkorb leeren (lassen) oder den Container vergrößern (`pct resize 118 rootfs +10G` auf dem Proxmox-Host).
 - **CSP-Meldungen:** Blockiert die Content Security Policy etwas im Browser, steht im Log `csp violation` mit Art und Quelle: `docker compose logs app | grep "csp violation"`. Bekannt und harmlos: `script-src eval` beim Export als SVG (Excalidraw bettet dann die Schrift nicht ein, sondern verweist auf sie).
+
+## Sprache zu Text (Whisper)
+
+Sprachnachrichten und Audiodateien werden als Transkript unter den Details gespeichert und sind durchsuchbar. Videos und bereits vorhandene Einträge werden nicht transkribiert.
+
+Einrichten (einmalig, in `/opt/whiteboard`):
+
+```bash
+./download-whisper-model.sh            # lädt models/ggml-small-q5_1.bin (ca. 190 MB)
+# .env: COMPOSE_PROFILES=transcription, TRANSCRIBE_ENABLED=true (WHISPER_MODEL=small-q5_1)
+docker compose up -d
+docker compose logs --tail=20 whisper
+```
+
+- **Modellwechsel:** `./download-whisper-model.sh base-q5_1`, `WHISPER_MODEL=base-q5_1` setzen, `docker compose up -d`. Schneller, aber auf Deutsch schwächer.
+- **Auslagern:** `WHISPER_URL` auf einen stärkeren Rechner im Heimnetz richten (dort whisper.cpp-Server mit gleichem `/inference`), `COMPOSE_PROFILES` ohne `transcription`.
+- **Abschalten:** `TRANSCRIBE_ENABLED=false`, `COMPOSE_PROFILES` leeren, `docker compose up -d --remove-orphans`.
+- **Dauer auf CT 118 (2 Kerne):** _wird bei der Abnahme gemessen und hier eingetragen._
+- **Fehlersuche:** Verwaltung → System zeigt „Whisper bereit“ oder „nicht erreichbar“. Ist Whisper aus, meldet `/healthz` 503. Logs: `docker compose logs whisper` und `docker compose logs app | grep transcribe`; fehlgeschlagene Jobs lassen sich unter System erneut versuchen.
 
 ## Passwort-Link über die Kommandozeile
 
@@ -90,6 +109,7 @@ Den Link im Browser öffnen und ein neues Passwort setzen. Danach sind alle ande
 | Eintrag bleibt bei „Wird verarbeitet …“ | Die Verarbeitung läuft im Hintergrund nacheinander (Bilder, PDFs und Videos einzeln). Fehlversuche werden nach 30 s, 5 min und 30 min wiederholt; danach steht „Verarbeitung fehlgeschlagen“. Ursache: `docker compose logs app | grep "job failed"` |
 | Link-Karte ohne Bild/Titel | Manche Seiten (Instagram, Amazon …) blockieren Abrufe vom Server; dann gibt es eine einfache Karte mit Domain. Private Adressen im Heimnetz ruft die Vorschau absichtlich nie ab |
 | Kein „Erkannter Text“ bei einem Bild/PDF | Nur wenn `OCR_ENABLED=true` in der `.env`. Fotos ohne gut lesbare Schrift ergeben absichtlich keinen Text (Konfidenz-Filter); PDFs mit eingebetteter Textebene bekommen keine OCR (ihr Text steht unter „PDF-Text“). Fehler: `docker compose logs app | grep ocr` |
+| Kein „Transkript“ bei einer Sprachnachricht | Nur wenn `TRANSCRIBE_ENABLED=true` und der Whisper-Container läuft (siehe „Sprache zu Text“). Audio, das vor der Einrichtung kam, wird nicht nachträglich transkribiert. Fehler: `docker compose logs app | grep transcribe` |
 | Video lässt sich nicht abspielen | Das Format kann der Browser nicht abspielen (z. B. manche .mov/.3gp); über „Herunterladen“ öffnen |
 | Telegram-Bot antwortet nicht | `docker compose logs app | grep telegram`: „token rejected“ = Token in der `.env` falsch (neu bei @BotFather mit `/token`); „not reachable“ = keine Verbindung zu Telegram, der Bot versucht es jede Minute neu. In den Einstellungen steht „nicht eingerichtet“, solange der Bot nicht verbunden ist |
 | Bot sagt „Dieser Bot ist privat.“ | Das Telegram-Konto ist nicht (mehr) verknüpft: in der App unter Einstellungen neu verbinden |

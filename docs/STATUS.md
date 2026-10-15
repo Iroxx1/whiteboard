@@ -15,12 +15,22 @@ Wird vom umsetzenden Modell nach jeder Phase aktualisiert. Phasen und Abnahmekri
 | 6 | Produktivbetrieb und Härtung | ✅ fertig (13.10.2026), auf CT 118 ausgerollt (`sha-201c626`) |
 | 7 | Volltextsuche | ✅ fertig (13.10.2026), auf CT 118 ausgerollt (`sha-ebc9e5c`, 14.10.2026) |
 | 8 | OCR | ✅ fertig (14.10.2026), auf CT 118 ausgerollt (`sha-a89ac34`, `OCR_ENABLED=true`) |
-| 9 | Sprachnachrichten → Text | offen |
+| 9 | Sprachnachrichten → Text | 🔧 Code fertig (15.10.2026), Ausrollen und Abnahme am Handy offen |
 | 10 | Feinschliff (optional) | offen |
 
 ## Offene Fragen an den Auftraggeber
 
 _(keine)_
+
+## Stand Phase 9 (15.10.2026)
+
+- **Whisper-Container** `whisper` (whisper.cpp-Server) im Compose, Profil `transcription`, nur internes Netz, `mem_limit: 1500m`, `cpus: 2`, Healthcheck. Image `ghcr.io/ggml-org/whisper.cpp:main` **per Digest gepinnt** (`sha256:758df247…`, Stand 15.10.2026, whisper.cpp v1.9.5). Das Image hat `ENTRYPOINT bash -c`, der Befehl steht deshalb als ein String. Binary `whisper-server` liegt laut Dockerfile im PATH; **beim ersten Start auf CT 118 prüfen** (nicht lokal testbar, kein Docker-Daemon am PC).
+- **Modell:** `infra/scripts/download-whisper-model.sh [name]` lädt `ggml-<name>.bin` nach `./models` (Standard `small-q5_1`); `setup-vm.sh` legt das Skript mit ab. `WHISPER_MODEL` in `.env` wählt die Datei.
+- **Konfig:** `TRANSCRIBE_ENABLED`, `WHISPER_URL`, `WHISPER_MODEL`, `COMPOSE_PROFILES=transcription` (siehe `.env.example`).
+- **Job `transcribe_audio`:** nach `process_audio` (Player ist sofort nutzbar), schwer und Parallelität 1, `POST` multipart an `WHISPER_URL` (`response_format=json`, `temperature=0`), Zeitlimit 10 × Dauer + 60 s. Ergebnis → `item_texts(kind='transcript')`, Suche, Live-Update. Bei Fehler bleibt der Eintrag ohne Transkript.
+- **Oberfläche:** Karte zeigt „Transkribiere …“ (`meta.transcribing`), danach die ersten 200 Zeichen (`meta.transcriptPreview`); Details zeigen „Transkript“ mit Kopieren-Knopf.
+- **`/healthz`** wird 503, wenn `TRANSCRIBE_ENABLED` an ist und Whisper nicht antwortet; Verwaltung → System zeigt den Whisper-Status.
+- **Tests:** Hilfsfunktionen; Job gegen einen gemockten Whisper-HTTP-Server (Transkript, Vorschau, Suche, Fehlerfall, Health/System).
 
 ## Stand Phase 8 (14.10.2026)
 
@@ -196,6 +206,7 @@ _(keine)_
 | 14.10.2026 | Phase 8: Keine OCR für Bilder, die direkt aufs Board gezogen wurden, nur für Einträge | Auftraggeber (wie Plan) |
 | 14.10.2026 | Phase 8: Zusätzlicher Konfidenz-Filter (Mittelwert ≥ 55) neben „mindestens 20 Zeichen“ | Fotos ohne Schrift ergäben sonst Zeichenmüll in Details und Suche |
 | 14.10.2026 | Phase 8: OCR als eigener Job nach `process_image`/`process_pdf`, Tesseract mit einem Thread | Karte sofort fertig, Oberfläche bleibt flüssig (Abnahmekriterium) |
+| 15.10.2026 | Phase 9: Modell `small-q5_1`, nur Audio (keine Videos), kein Nachholen des Bestands, RAM von CT 118 erst messen | Auftraggeber |
 
 ## Manuelle Tests durch den Auftraggeber
 
@@ -292,3 +303,11 @@ _(keine)_
 - [ ] Gescanntes PDF (z. B. aus Genius Scan) teilen: erkannter Text da?
 - [ ] Ein Urlaubsfoto ohne Schrift: es sollte **kein** „Erkannter Text“ auftauchen
 - [ ] Während der Erkennung im Board arbeiten: bleibt alles flüssig?
+
+### Phase 9
+
+- [ ] Ausrollen auf CT 118 (nach Freigabe): Modell laden, `.env` anpassen, Image + Whisper starten
+- [ ] Telegram-Sprachnachricht senden: Karte zeigt „Transkribiere …“, danach Text; Details zeigen „Transkript“
+- [ ] WhatsApp-Sprachnachricht (`.opus`) über das Teilen-Menü schicken: deutsch transkribiert?
+- [ ] Wort aus dem Transkript in der Suche finden
+- [ ] Dauer messen (1 Minute Sprache) und in `docs/BETRIEB.md` eintragen; RAM/Swap von CT 118 währenddessen prüfen

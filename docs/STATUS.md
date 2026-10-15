@@ -16,7 +16,7 @@ Wird vom umsetzenden Modell nach jeder Phase aktualisiert. Phasen und Abnahmekri
 | 7 | Volltextsuche | ✅ fertig (13.10.2026), auf CT 118 ausgerollt (`sha-ebc9e5c`, 14.10.2026) |
 | 8 | OCR | ✅ fertig (14.10.2026), auf CT 118 ausgerollt (`sha-a89ac34`, `OCR_ENABLED=true`) |
 | 9 | Sprachnachrichten → Text | ✅ fertig und abgenommen (15.10.2026), auf CT 118 ausgerollt (`sha-46caff8`, eigenes AVX2-Whisper-Image) |
-| 10 | Feinschliff (Passkeys, Board-Tags, Vorschaubilder, Link/PDF per Einfügen) | 🔧 Code fertig (15.10.2026), Ausrollen und Abnahme am Handy offen |
+| 10 | Feinschliff (Passkeys, Board-Tags, Vorschaubilder, Link/PDF per Einfügen) | ✅ Code fertig, auf CT 118 ausgerollt (`sha-fd02db5`, 15.10.2026), Abnahme am Handy offen |
 
 ## Offene Fragen an den Auftraggeber
 
@@ -327,7 +327,7 @@ Umfang mit dem Auftraggeber abgestimmt: Passkeys, Link/PDF per Einfügen, Board-
 
 ### Phase 10
 
-- [ ] Ausrollen auf CT 118 (nach Freigabe)
+- [x] Ausgerollt auf CT 118 (15.10.2026, `sha-fd02db5`, Migrationen 0006/0007)
 - [ ] Einstellungen → Passkeys: am Handy einen Passkey anlegen; abmelden; „Mit Passkey anmelden“ klappt mit Fingerabdruck/Bildschirmsperre
 - [ ] Mit Passwort geht die Anmeldung weiterhin
 - [ ] Board anlegen mit Tags (z. B. „Urlaub, Familie“); im Dashboard erscheinen die Chips, ein Klick filtert

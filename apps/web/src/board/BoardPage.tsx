@@ -116,7 +116,8 @@ function PhoneButtons({ inboxCount, onInbox }: { inboxCount: number; onInbox: ()
   const button =
     'pointer-events-auto relative flex h-11 w-11 items-center justify-center rounded-xl border border-[var(--wb-border)] bg-[var(--wb-surface)] text-xl text-[var(--wb-text)] shadow-md active:bg-[var(--wb-hover)]'
   return (
-    <div className="pointer-events-none absolute top-40 right-2 z-10 flex flex-col gap-2">
+    // Hidden while the inbox panel covers the screen: it has its own close button.
+    <div className="pointer-events-none absolute top-40 right-2 z-10 flex flex-col gap-2 group-has-[.sidebar]/board:hidden">
       <SearchButton className={button} />
       <button type="button" onClick={onInbox} title={de.inbox.toggle} aria-label={de.inbox.toggle} className={button}>
         📥

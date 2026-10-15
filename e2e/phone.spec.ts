@@ -44,4 +44,14 @@ test('phone: header menu, board toolbar and buttons stay on screen', async ({ br
   await page.locator('.main-menu-trigger').click()
   await expect(page.locator('.dropdown-menu')).toBeVisible()
   await expect(sticky).toBeHidden()
+
+  // With the inbox panel open, the floating buttons and the sticky-note bar get out of the way.
+  await page.reload()
+  await joined(page)
+  await expect(page.locator('button[aria-label="Inbox"]')).toBeVisible()
+  await page.locator('button[aria-label="Inbox"]').click()
+  await expect(page.locator('.sidebar')).toBeVisible()
+  await expect(page.locator('button[aria-label="Inbox"]')).toBeHidden()
+  await expect(page.locator('[aria-label="Suche"]')).toBeHidden()
+  await expect(sticky).toBeHidden()
 })

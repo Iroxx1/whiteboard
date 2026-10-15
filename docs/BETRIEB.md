@@ -85,7 +85,7 @@ docker compose logs --tail=20 whisper
 - **Modellwechsel:** `./download-whisper-model.sh base-q5_1`, `WHISPER_MODEL=base-q5_1` setzen, `docker compose up -d`. Schneller, aber auf Deutsch schwächer.
 - **Auslagern:** `WHISPER_URL` auf einen stärkeren Rechner im Heimnetz richten (dort whisper.cpp-Server mit gleichem `/inference`), `COMPOSE_PROFILES` ohne `transcription`.
 - **Abschalten:** `TRANSCRIBE_ENABLED=false`, `COMPOSE_PROFILES` leeren, `docker compose up -d --remove-orphans`.
-- **Dauer auf CT 118 (2 Kerne):** _wird bei der Abnahme gemessen und hier eingetragen._
+- **Dauer auf CT 118 (2 Kerne, i5-10500T, `small-q5_1`), gemessen am 15.10.2026:** 114 s Sprache dauerten 54 s, 32 s Sprache dauerten 18 s, also etwa **0,5 s pro Sekunde Sprache** (rund 30 s je Minute). Während der Arbeit: Whisper ca. 500 MB RAM, CPU beider Kerne ausgelastet, Swap praktisch unbenutzt (CT gesamt ca. 820 von 3072 MB).
 - **Fehlersuche:** Verwaltung → System zeigt „Whisper bereit“ oder „nicht erreichbar“. Ist Whisper aus, meldet `/healthz` 503. Logs: `docker compose logs whisper` und `docker compose logs app | grep transcribe`; fehlgeschlagene Jobs lassen sich unter System erneut versuchen.
 
 ## Passwort-Link über die Kommandozeile
